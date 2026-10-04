@@ -15,8 +15,16 @@ function saveUsers(users) {
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(users));
 }
 
-function normalizePhone(phone) {
-    return phone.replace(/[^0-9]/g, "");
+function isValidPhone(phone) {
+    return /^[0-9]{10,11}$/.test(phone);
+}
+
+function isValidId(id) {
+    return /^[A-Za-z]{3,20}$/.test(id);
+}
+
+function isValidPassword(password) {
+    return /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~])[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]{8,}$/.test(password);
 }
 
 function setMessage(elementId, message) {
@@ -78,7 +86,7 @@ if (signupForm) {
         event.preventDefault();
 
         const name = document.querySelector("#signupName").value.trim();
-        const phone = normalizePhone(document.querySelector("#signupPhone").value);
+        const phone = document.querySelector("#signupPhone").value.trim();
         const id = document.querySelector("#signupId").value.trim();
         const password = document.querySelector("#signupPassword").value;
         const passwordConfirm = document.querySelector("#signupPasswordConfirm").value;
@@ -88,18 +96,18 @@ if (signupForm) {
             return;
         }
 
-        if (phone.length < 10) {
-            alert("전화번호를 올바르게 입력해주세요.");
+        if (!isValidPhone(phone)) {
+            alert("전화번호는 '-' 없이 숫자 10~11자리로 입력해주세요.");
             return;
         }
 
-        if (id.length < 3) {
-            alert("아이디는 3글자 이상 입력해주세요.");
+        if (!isValidId(id)) {
+            alert("아이디는 영문 대소문자만 사용하여 3~20자로 입력해주세요.");
             return;
         }
 
-        if (password.length < 4) {
-            alert("비밀번호는 4글자 이상 입력해주세요.");
+        if (!isValidPassword(password)) {
+            alert("비밀번호는 영문, 숫자, 특수기호를 포함해 8자 이상 입력해주세요.");
             return;
         }
 
@@ -145,7 +153,12 @@ if (findPasswordForm) {
         event.preventDefault();
 
         const name = document.querySelector("#findName").value.trim();
-        const phone = normalizePhone(document.querySelector("#findPhone").value);
+        const phone = document.querySelector("#findPhone").value.trim();
+        if (!isValidPhone(phone)) {
+            setMessage("findPasswordMessage", "전화번호는 '-' 없이 숫자 10~11자리로 입력해주세요.");
+            return;
+        }
+
         const users = getUsers();
 
         const user = users.find((item) => item.name === name && item.phone === phone);
@@ -179,8 +192,8 @@ if (resetPasswordForm) {
         const newPassword = document.querySelector("#newPassword").value;
         const newPasswordConfirm = document.querySelector("#newPasswordConfirm").value;
 
-        if (newPassword.length < 4) {
-            setMessage("resetPasswordMessage", "비밀번호는 4글자 이상 입력해주세요.");
+        if (!isValidPassword(newPassword)) {
+            setMessage("resetPasswordMessage", "비밀번호는 영문, 숫자, 특수기호를 포함해 8자 이상 입력해주세요.");
             return;
         }
 
