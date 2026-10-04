@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko" class="app-html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAKEBOOK 메인</title>
+    <link rel="stylesheet" href="css/fakebook.css">
+</head>
+<body class="app-page">
+    <header class="app-navbar">
+        <a class="app-brand" href="main.html">
+            <img src="img/FakebookLogo2.png" alt="Fakebook 로고">
+            <span>FAKEBOOK</span>
+        </a>
+        <button type="button" class="app-logout" id="logoutButton">로그아웃</button>
+    </header>
+
+    <main class="app-layout">
+        <aside class="app-sidebar">
+            <div class="app-profile-card">
+                <img src="img/FakebookLogo2.png" alt="프로필 기본 이미지">
+                <strong id="welcomeName">사용자</strong>
+                <span>FAKEBOOK에 오신 것을 환영합니다.</span>
+            </div>
+            <nav class="app-menu">
+                <a href="#">홈</a>
+                <a href="#">친구</a>
+                <a href="#">저장됨</a>
+            </nav>
+        </aside>
+
+        <section class="app-feed">
+            <div class="feed-composer">
+                <h2>무슨 생각을 하고 있나요?</h2>
+                <textarea id="postText" placeholder="오늘의 이야기를 작성해보세요."></textarea>
+                <button type="button" id="postButton" class="auth-primary-button">게시하기</button>
+            </div>
+
+            <article class="feed-post">
+                <div class="feed-post-header">
+                    <strong>FAKEBOOK</strong>
+                    <span>방금 전</span>
+                </div>
+                <p>FAKEBOOK 첫 번째 게시물입니다. 지금은 로컬 브라우저 안에서 동작하는 기능을 연습하고 있습니다.</p>
+                <button type="button" class="feed-like">좋아요 <span>0</span></button>
+                <div class="feed-comments">
+                    <input type="text" placeholder="댓글을 입력하세요.">
+                    <button type="button">댓글</button>
+                </div>
+                <div class="comment-list"></div>
+            </article>
+
+            <div id="localPosts"></div>
+        </section>
+    </main>
+
+    <script src="js/auth.js"></script>
+</body>
+</html>
