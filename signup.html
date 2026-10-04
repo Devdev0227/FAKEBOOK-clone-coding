@@ -30,18 +30,18 @@
                         </div>
                         <div class="field-group">
                             <label for="signupPhone">전화번호</label>
-                            <input type="tel" id="signupPhone" placeholder="전화번호" required>
+                            <input type="tel" id="signupPhone" placeholder="전화번호 (숫자만)" inputmode="numeric" pattern="[0-9]{10,11}" minlength="10" maxlength="11" required>
                         </div>
                     </div>
 
                     <div class="field-group">
                         <label for="signupId">아이디</label>
-                        <input type="text" id="signupId" placeholder="로그인에 사용할 아이디" required>
+                        <input type="text" id="signupId" placeholder="영문 3~20자" pattern="[A-Za-z]{3,20}" minlength="3" maxlength="20" required>
                     </div>
 
                     <div class="field-group">
                         <label for="signupPassword">비밀번호</label>
-                        <input type="password" id="signupPassword" placeholder="비밀번호" required>
+                        <input type="password" id="signupPassword" placeholder="영문+숫자+특수기호 8자 이상" required>
                     </div>
 
                     <div class="field-group">
@@ -49,7 +49,7 @@
                         <input type="password" id="signupPasswordConfirm" placeholder="비밀번호 다시 입력" required>
                     </div>
 
-                    <p class="auth-note">※ 이 프로젝트는 학습용으로 브라우저의 localStorage에 회원정보를 저장합니다.</p>
+                    <p class="auth-note">아이디는 영문 대소문자만 사용할 수 있습니다.<br>전화번호는 - 없이 숫자 10~11자리로 입력하세요.<br>비밀번호는 영문, 숫자, 특수기호를 포함해 8자 이상 입력하세요.<br>※ 이 프로젝트는 학습용으로 브라우저의 localStorage에 회원정보를 저장합니다.</p>
 
                     <button type="submit" class="auth-primary-button">가입하기</button>
                 </form>
