@@ -134,3 +134,375 @@ html, body {
     transform: translateX(250px) translateY(-350px);
     width: 500px;
 }
+
+/* =========================================
+   로그인 / 회원가입 / 비밀번호 찾기 공통 UI
+   기존 로그인 페이지의 스타일은 위에서 그대로 유지합니다.
+   ========================================= */
+
+.auth-html,
+.auth-html body,
+.app-html,
+.app-html body {
+    overflow: auto;
+    height: auto;
+}
+
+.auth-page {
+    min-height: 100vh;
+    background: #f0f2f5;
+    font-family: Arial, "Noto Sans KR", sans-serif;
+    color: #1c1e21;
+}
+
+.auth-shell {
+    min-height: 100vh;
+}
+
+.auth-brand-row {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border-bottom: 1px solid #dddfe2;
+}
+
+.auth-brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #1d84eb;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.auth-brand-link img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+.auth-main {
+    min-height: calc(100vh - 72px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 48px 20px;
+}
+
+.auth-card {
+    width: min(520px, 100%);
+    background: #ffffff;
+    border: 1px solid #dddfe2;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 28px;
+}
+
+.auth-card.small-card {
+    width: min(460px, 100%);
+}
+
+.auth-card-title h1 {
+    margin-bottom: 8px;
+    font-size: 26px;
+}
+
+.auth-card-title p {
+    margin-bottom: 24px;
+    color: #65676b;
+    line-height: 1.5;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.form-row.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-group label {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.field-group input {
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 12px;
+    border: 1px solid #ccd0d5;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+}
+
+.field-group input:focus {
+    border-color: #1d84eb;
+    box-shadow: 0 0 0 2px rgba(29, 132, 235, 0.14);
+}
+
+.auth-primary-button {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: #1d84eb;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-primary-button:hover {
+    background: #166fe5;
+}
+
+.auth-note {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #65676b;
+}
+
+.auth-text-link {
+    display: block;
+    margin-top: 20px;
+    text-align: center;
+    color: #1d84eb;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.auth-text-link:hover {
+    text-decoration: underline;
+}
+
+.auth-error {
+    min-height: 20px;
+    margin-top: 14px;
+    color: #d93025;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* =========================================
+   로그인 페이지 버튼 커서
+   ========================================= */
+
+.loginbutton1,
+.loginbutton2,
+.loginbutton3 {
+    cursor: pointer;
+}
+
+/* =========================================
+   메인 페이지
+   ========================================= */
+
+.app-page {
+    min-height: 100vh;
+    background: #f0f2f5;
+    color: #1c1e21;
+    font-family: Arial, "Noto Sans KR", sans-serif;
+}
+
+.app-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: #1d84eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.app-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.app-brand img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+.app-logout {
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    background: transparent;
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.app-logout:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.app-layout {
+    width: min(1200px, calc(100% - 32px));
+    margin: 24px auto;
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 20px;
+}
+
+.app-sidebar,
+.feed-composer,
+.feed-post {
+    background: #ffffff;
+    border: 1px solid #dddfe2;
+    border-radius: 8px;
+}
+
+.app-profile-card {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.app-profile-card img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+.app-profile-card span {
+    font-size: 13px;
+    color: #65676b;
+    line-height: 1.5;
+}
+
+.app-menu {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #eee;
+}
+
+.app-menu a {
+    padding: 13px 18px;
+    color: #1c1e21;
+    text-decoration: none;
+}
+
+.app-menu a:hover {
+    background: #f0f2f5;
+}
+
+.app-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.feed-composer,
+.feed-post {
+    padding: 20px;
+}
+
+.feed-composer h2 {
+    font-size: 17px;
+    margin-bottom: 12px;
+}
+
+.feed-composer textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    resize: vertical;
+    border: 1px solid #ccd0d5;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+.feed-post-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.feed-post-header span {
+    color: #65676b;
+    font-size: 12px;
+}
+
+.feed-post p {
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.feed-like {
+    margin-top: 16px;
+    border: 0;
+    background: transparent;
+    color: #65676b;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.feed-like:hover {
+    color: #1d84eb;
+}
+
+.feed-comments {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.feed-comments input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #ccd0d5;
+    border-radius: 18px;
+    padding: 8px 12px;
+}
+
+.feed-comments button {
+    border: 0;
+    border-radius: 18px;
+    padding: 8px 12px;
+    background: #e4e6eb;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .form-row.two-col {
+        grid-template-columns: 1fr;
+    }
+
+    .app-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .app-sidebar {
+        order: 2;
+    }
+}
