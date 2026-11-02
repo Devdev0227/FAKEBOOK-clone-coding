@@ -506,3 +506,22 @@ html, body {
         order: 2;
     }
 }
+
+/* 게시물 / 댓글 상호작용 */
+[hidden] { display: none !important; }
+#localPosts { display: grid; gap: 16px; }
+#feedTitle { font-size: 20px; }
+.app-menu a[aria-current="page"] { background: #e7f3ff; color: #166fe5; font-weight: bold; }
+.media-label { display: block; margin: 12px 0 8px; font-size: 14px; }
+.media-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 12px; }
+.media-grid img, .media-grid video { width: 100%; max-height: 440px; object-fit: contain; border-radius: 8px; background: #f0f2f5; }
+.post-actions { display: flex; gap: 10px; padding: 14px 0; }
+.feed-post button, #mediaPreview button { cursor: pointer; border: 0; border-radius: 6px; padding: 8px 12px; background: #f0f2f5; color: #454950; }
+.feed-post button[aria-pressed="true"] { background: #e7f3ff; color: #166fe5; font-weight: bold; }
+.feed-post h3 { font-size: 14px; margin: 8px 0; }
+.comment-item { border-top: 1px solid #eee; padding: 12px 0; overflow-wrap: anywhere; }
+.comment-item button { margin: 6px 6px 0 0; }
+.feed-post p { overflow-wrap: anywhere; }
+#feedMessage { margin-top: 8px; font-size: 14px; color: #454950; }
+button:disabled { opacity: .6; cursor: wait; }
+button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offset: 3px; }

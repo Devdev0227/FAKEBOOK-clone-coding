@@ -23,9 +23,9 @@
                 <span>FAKEBOOK에 오신 것을 환영합니다.</span>
             </div>
             <nav class="app-menu">
-                <a href="#">홈</a>
+                <a href="#home" id="homeLink" aria-current="page">홈</a>
                 <a href="#">친구</a>
-                <a href="#">저장됨</a>
+                <a href="#saved" id="savedLink">저장됨</a>
             </nav>
         </aside>
 
@@ -33,27 +33,19 @@
             <div class="feed-composer">
                 <h2>무슨 생각을 하고 있나요?</h2>
                 <textarea id="postText" placeholder="오늘의 이야기를 작성해보세요."></textarea>
+                <label class="media-label" for="postMedia">사진·영상 첨부 (최대 4개, 각 20MB)</label>
+                <input type="file" id="postMedia" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg" multiple>
+                <div id="mediaPreview" class="media-grid"></div>
+                <p id="feedMessage" role="status" aria-live="polite"></p>
                 <button type="button" id="postButton" class="auth-primary-button">게시하기</button>
             </div>
 
-            <article class="feed-post">
-                <div class="feed-post-header">
-                    <strong>FAKEBOOK</strong>
-                    <span>방금 전</span>
-                </div>
-                <p>FAKEBOOK 첫 번째 게시물입니다. 지금은 로컬 브라우저 안에서 동작하는 기능을 연습하고 있습니다.</p>
-                <button type="button" class="feed-like">좋아요 <span>0</span></button>
-                <div class="feed-comments">
-                    <input type="text" placeholder="댓글을 입력하세요.">
-                    <button type="button">댓글</button>
-                </div>
-                <div class="comment-list"></div>
-            </article>
-
+            <h2 id="feedTitle">홈</h2>
             <div id="localPosts"></div>
         </section>
     </main>
 
     <script src="js/auth.js"></script>
+    <script src="js/feed.js"></script>
 </body>
 </html>
