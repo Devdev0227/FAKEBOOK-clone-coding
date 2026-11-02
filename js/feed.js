@@ -94,6 +94,68 @@
         if (pressed !== undefined) element.setAttribute('aria-pressed', String(pressed));
         element.addEventListener('click', action); return element;
     }
+    function iconButton(kind, count, pressed, action) {
+        const label = kind === 'heart' ? `좋아요 ${count}개${pressed ? ', 취소' : ''}` : (pressed ? '저장 취소' : '게시물 저장');
+        const element = button('', action, pressed);
+        element.className = `icon-button ${kind}-button`;
+        element.setAttribute('aria-label', label); element.title = label;
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
+        const path = document.createElementNS(ns, 'path');
+        path.setAttribute('d', kind === 'heart'
+            ? 'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z'
+            : 'M6 3h12v18l-6-4-6 4V3Z');
+        svg.append(path); element.append(svg);
+        if (kind === 'heart') element.append(textElement('span', String(count)));
+        return element;
+    }
+    function commentForm(label, onSubmit) {
+        const form = document.createElement('form'); form.className = 'feed-comments';
+        const field = document.createElement('input'); field.placeholder = `${label}을 입력하세요.`;
+        field.setAttribute('aria-label', `${label} 내용`); field.required = true; field.maxLength = 2000;
+        const submit = document.createElement('button'); submit.type = 'submit'; submit.textContent = `${label} 게시`;
+        form.append(field, submit);
+        form.addEventListener('submit', event => {
+            event.preventDefault(); const text = field.value.trim();
+            if (text && text.length <= 2000) onSubmit(text);
+        });
+        return form;
+    }
+    const newComment = (actor, text) => ({id: uid(), authorId: actor.id, author: actor.name, text, likedBy: [], createdAt: new Date().toISOString()});
+    function commentRow(postId, comment, user, parentId = null) {
+        const row = document.createElement('div'); row.className = parentId === null ? 'comment-item' : 'comment-item reply-item';
+        row.append(textElement('strong', comment.author), textElement('p', comment.text));
+        const find = post => parentId === null ? post.comments : (post.comments.find(item => item.id === parentId)?.replies || []);
+        const liked = comment.likedBy || [];
+        row.append(iconButton('heart', liked.length, liked.includes(user.id), () => change(postId, (post, actor) => {
+            const target = find(post).find(item => item.id === comment.id);
+            if (target) target.likedBy = toggle(target.likedBy || [], actor.id);
+        })));
+        if (comment.authorId === user.id) row.append(button(parentId === null ? '댓글 삭제' : '답글 삭제', () => change(postId, (post, actor) => {
+            const list = find(post); const index = list.findIndex(item => item.id === comment.id && item.authorId === actor.id);
+            if (index < 0 || !confirm(parentId === null ? '이 댓글과 달린 답글을 모두 삭제할까요?' : '이 답글을 삭제할까요?')) return false;
+            list.splice(index, 1);
+        })));
+        if (parentId === null) {
+            const replies = document.createElement('div'); replies.className = 'reply-list';
+            const form = commentForm('답글', text => change(postId, (post, actor) => {
+                const target = post.comments.find(item => item.id === comment.id);
+                if (!target) return false;
+                if (!Array.isArray(target.replies)) target.replies = [];
+                target.replies.push(newComment(actor, text));
+            }));
+            form.hidden = true;
+            const replyButton = button(`답글 달기 (${(comment.replies || []).length})`, () => {
+                form.hidden = !form.hidden; replyButton.setAttribute('aria-expanded', String(!form.hidden));
+                if (!form.hidden) form.querySelector('input').focus();
+            });
+            replyButton.setAttribute('aria-expanded', 'false'); row.append(replyButton);
+            for (const reply of comment.replies || []) replies.append(commentRow(postId, reply, user, comment.id));
+            row.append(replies, form);
+        }
+        return row;
+    }
     function change(postId, action) {
         const user = current();
         if (!user?.id) { location.href = 'index.html'; return; }
@@ -129,29 +191,12 @@
             article.append(header, textElement('p', post.text || ''));
             const gallery = document.createElement('div'); gallery.className = 'media-grid'; article.append(gallery);
             const actions = document.createElement('div'); actions.className = 'post-actions';
-            actions.append(button(`좋아요 ${post.legacyLikes + post.likedBy.length}`, () => change(post.id, (target, actor) => { target.likedBy = toggle(target.likedBy, actor.id); }), post.likedBy.includes(user.id)),
-                button(post.savedBy.includes(user.id) ? '저장 취소' : '저장', () => change(post.id, (target, actor) => { target.savedBy = toggle(target.savedBy, actor.id); }), post.savedBy.includes(user.id)));
-            article.append(actions, textElement('h3', `댓글 ${post.comments.length}`));
-            for (const comment of post.comments) {
-                const row = document.createElement('div'); row.className = 'comment-item';
-                row.append(textElement('strong', comment.author), textElement('p', comment.text));
-                const liked = comment.likedBy || [];
-                row.append(button(`좋아요 ${liked.length}`, () => change(post.id, (target, actor) => {
-                    const found = target.comments.find(item => item.id === comment.id);
-                    if (found) found.likedBy = toggle(found.likedBy || [], actor.id);
-                }), liked.includes(user.id)));
-                if (comment.authorId === user.id) row.append(button('댓글 삭제', () => change(post.id, (target, actor) => {
-                    if (!confirm('이 댓글을 삭제할까요?')) return false;
-                    target.comments = target.comments.filter(item => item.id !== comment.id || item.authorId !== actor.id);
-                })));
-                article.append(row);
-            }
-            const form = document.createElement('form'); form.className = 'feed-comments';
-            const field = document.createElement('input'); field.placeholder = '댓글을 입력하세요.'; field.setAttribute('aria-label', '댓글 내용'); field.required = true; field.maxLength = 2000;
-            const submit = document.createElement('button'); submit.type = 'submit'; submit.textContent = '댓글 게시'; form.append(field, submit);
-            form.addEventListener('submit', event => { event.preventDefault(); const text = field.value.trim(); if (!text) return;
-                change(post.id, (target, actor) => target.comments.push({ id: uid(), authorId: actor.id, author: actor.name, text, likedBy: [], createdAt: new Date().toISOString() }));
-            });
+            actions.append(iconButton('heart', post.legacyLikes + post.likedBy.length, post.likedBy.includes(user.id), () => change(post.id, (target, actor) => { target.likedBy = toggle(target.likedBy, actor.id); })),
+                iconButton('bookmark', 0, post.savedBy.includes(user.id), () => change(post.id, (target, actor) => { target.savedBy = toggle(target.savedBy, actor.id); })));
+            const commentCount = post.comments.reduce((sum, comment) => sum + 1 + (comment.replies || []).length, 0);
+            article.append(actions, textElement('h3', `댓글 ${commentCount}`));
+            for (const comment of post.comments) article.append(commentRow(post.id, comment, user));
+            const form = commentForm('댓글', text => change(post.id, (target, actor) => target.comments.push(newComment(actor, text))));
             article.append(form); root.append(article);
             for (const media of post.media) {
                 try {
