@@ -506,3 +506,33 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
     .login-page .login-card { padding: 0 0 24px; }
     .login-page .login-find-button { margin: 24px 0 36px; }
 }
+
+
+/* 첨부 시안의 소개 영역 비율만 적용: 이미지 우측 상단, 문구 좌측 하단 */
+@media (min-width: 1001px) {
+    .login-page .login-intro {
+        display: block;
+        aspect-ratio: 1120 / 727;
+        container-type: inline-size;
+    }
+    .login-page .login-illustration {
+        position: absolute;
+        top: 11.4%;
+        right: 6.25%;
+        width: 62.5%;
+        max-width: none;
+        height: auto;
+        margin: 0;
+    }
+    .login-page .login-intro h1 {
+        position: absolute;
+        left: 3.57%;
+        bottom: 6%;
+        margin: 0;
+        font-size: 2.5vw;
+        font-size: 3.8cqw;
+        line-height: 1.5;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+    }
+}
