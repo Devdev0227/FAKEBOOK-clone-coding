@@ -126,15 +126,20 @@
     function commentRow(postId, comment, user, parentId = null) {
         const row = document.createElement('div'); row.className = parentId === null ? 'comment-item' : 'comment-item reply-item';
         const body = textElement('p', comment.text);
-        row.append(textElement('strong', comment.author), body);
-        if (comment.updatedAt) row.append(textElement('small', '수정됨'));
+        const header = document.createElement('div'); header.className = 'comment-header';
+        const author = document.createElement('div'); author.className = 'comment-author';
+        const actions = document.createElement('div'); actions.className = 'comment-actions';
+        author.append(textElement('strong', comment.author));
+        if (comment.updatedAt) author.append(textElement('small', '수정됨'));
+        header.append(author, actions);
+        row.append(header, body);
         const find = post => parentId === null ? post.comments : (post.comments.find(item => item.id === parentId)?.replies || []);
         const liked = comment.likedBy || [];
-        row.append(iconButton('heart', liked.length, liked.includes(user.id), () => change(postId, (post, actor) => {
+        actions.append(iconButton('heart', liked.length, liked.includes(user.id), () => change(postId, (post, actor) => {
             const target = find(post).find(item => item.id === comment.id);
             if (target) target.likedBy = toggle(target.likedBy || [], actor.id);
         })));
-        if (comment.authorId === user.id) row.append(button(parentId === null ? '댓글 삭제' : '답글 삭제', () => change(postId, (post, actor) => {
+        if (comment.authorId === user.id) actions.append(button(parentId === null ? '댓글 삭제' : '답글 삭제', () => change(postId, (post, actor) => {
             const list = find(post); const index = list.findIndex(item => item.id === comment.id && item.authorId === actor.id);
             if (index < 0 || !confirm(parentId === null ? '이 댓글과 달린 답글을 모두 삭제할까요?' : '이 답글을 삭제할까요?')) return false;
             list.splice(index, 1);
@@ -164,7 +169,9 @@
                 editButton.hidden = false;
                 editButton.focus();
             });
-            editor.append(field, submit, cancel);
+            const controls = document.createElement('div'); controls.className = 'comment-edit-actions';
+            controls.append(submit, cancel);
+            editor.append(field, controls);
             editor.addEventListener('submit', event => {
                 event.preventDefault();
                 const text = field.value.trim();
@@ -184,7 +191,8 @@
                     }
                 });
             });
-            row.append(editButton, editor);
+            actions.append(editButton);
+            row.append(editor);
         }
         if (parentId === null) {
             const replies = document.createElement('div'); replies.className = 'reply-list';
@@ -199,7 +207,9 @@
                 form.hidden = !form.hidden; replyButton.setAttribute('aria-expanded', String(!form.hidden));
                 if (!form.hidden) form.querySelector('input').focus();
             });
-            replyButton.setAttribute('aria-expanded', 'false'); row.append(replyButton);
+            replyButton.setAttribute('aria-expanded', 'false');
+            const replyActions = document.createElement('div'); replyActions.className = 'comment-reply-actions';
+            replyActions.append(replyButton); row.append(replyActions);
             for (const reply of comment.replies || []) replies.append(commentRow(postId, reply, user, comment.id));
             row.append(replies, form);
         }

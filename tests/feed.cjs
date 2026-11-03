@@ -41,9 +41,17 @@ const submit = (form, text) => { form.children[0].value = text; form.events.subm
     click('댓글 수정');
     let commentEditor = find(n => n.className === 'comment-item').children.find(n => n.className === 'feed-comments comment-editor');
     assert.equal(commentEditor.children[0].value, 'old comment');
+    const commentRow = find(n => n.className === 'comment-item');
+    assert.equal(commentRow.children[0].className, 'comment-header');
+    assert.equal(commentRow.children[0].children[1].className, 'comment-actions');
+    assert.equal(commentEditor.children[1].className, 'comment-edit-actions');
+    assert.equal(commentEditor.children[1].children.length, 2);
+    assert.equal(commentEditor.hidden, false);
+    assert(commentRow.children.some(n => n.className === 'comment-reply-actions'));
+
     submit(commentEditor, '   '); assert.equal(posts()[0].comments[0].text, 'old comment');
     submit(commentEditor, 'x'.repeat(2001)); assert.equal(posts()[0].comments[0].text, 'old comment');
-    commentEditor.children.find(n => n.textContent === '수정 취소').click();
+    walk(commentEditor).find(n => n.textContent === '수정 취소').click();
     assert.equal(posts()[0].comments[0].text, 'old comment');
     const repliesBefore = posts()[0].comments[0].replies;
     click('댓글 수정'); submit(commentEditor, 'edited comment');
