@@ -476,3 +476,33 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
     .feed-comments { gap: 6px; }
     .feed-comments button { padding: 8px; font-size: 14px; }
 }
+
+/* 원래 로그인 화면의 흰 배경과 여백, 테두리 버튼 유지 */
+.login-page { background: #fff; color: #000; }
+.login-page .login-layout { width: min(1440px, calc(100% - 64px)); grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 80px); }
+.login-page .login-intro { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); align-self: center; }
+.login-page .login-illustration { grid-area: 1 / 1; width: 88%; max-width: 620px; margin: 0 0 64px auto; align-self: start; }
+.login-page .login-intro h1 { grid-area: 1 / 1; z-index: 1; align-self: end; justify-self: start; font-size: clamp(28px, 3vw, 44px); line-height: 1.5; letter-spacing: -1px; text-align: left; }
+.login-page .login-card { max-width: 540px; padding: 20px 0; border: 0; border-radius: 0; box-shadow: none; }
+.login-page .login-card form { gap: 0; }
+.login-page .login-card h2 { font-size: clamp(22px, 2.2vw, 30px); color: #000; margin-bottom: 20px; }
+.login-page .field-group { gap: 0; margin-bottom: 24px; }
+.login-page .field-group input { min-height: 54px; border: 1px solid #888; border-radius: 2px; padding: 12px 14px; font-size: 18px; background: #e8f0fe; color: #000; }
+.login-page .auth-primary-button { margin: 0; min-height: 44px; border: 2px solid #999; border-radius: 6px; font-weight: 400; font-size: 18px; }
+.login-page .login-find-button { color: #000; margin: 36px 0 54px; font-size: 16px; }
+.login-page .login-signup-button { color: #1d84eb; background: #fff; border: 2px solid #1d84eb; border-bottom-color: #175b9f; border-radius: 6px; min-height: 44px; font-weight: 400; font-size: 18px; }
+.login-page .login-signup-button:hover { background: #f2f7ff; }
+.login-beta { display: block; width: 110px; height: auto; margin: 12px auto 0; }
+.login-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 1000px) and (min-width: 761px) {
+    .login-page .login-layout { width: calc(100% - 40px); gap: 28px; }
+    .login-page .login-intro h1 { font-size: 28px; }
+}
+@media (max-width: 760px) {
+    .login-page .login-layout { width: min(540px, calc(100% - 40px)); grid-template-columns: minmax(0, 1fr); gap: 24px; }
+    .login-page .login-intro { width: 100%; }
+    .login-page .login-illustration { width: 78%; max-width: 340px; margin: 0 0 56px auto; }
+    .login-page .login-intro h1 { font-size: clamp(24px, 5.2vw, 32px); }
+    .login-page .login-card { padding: 0 0 24px; }
+    .login-page .login-find-button { margin: 24px 0 36px; }
+}

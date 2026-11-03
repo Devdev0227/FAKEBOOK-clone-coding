@@ -9,7 +9,6 @@
 <body class="login-page">
     <header class="login-header">
         <a class="brand" href="index.html"><img src="img/FakebookLogo2.png" alt=""><span>FAKEBOOK</span></a>
-        <img class="beta-badge" src="img/Beta icon.png" alt="Beta">
     </header>
     <main class="login-layout">
         <section class="login-intro" aria-labelledby="introTitle">
@@ -20,18 +19,18 @@
             <form id="loginForm" action="#" method="POST">
                 <h2 id="loginTitle">FAKEBOOK에 로그인</h2>
                 <div class="field-group">
-                    <label for="name">아이디</label>
+                    <label class="login-sr-only" for="name">아이디</label>
                     <input type="text" name="name" id="name" required placeholder="아이디" autocomplete="username">
                 </div>
                 <div class="field-group">
-                    <label for="password">비밀번호</label>
+                    <label class="login-sr-only" for="password">비밀번호</label>
                     <input type="password" name="password" id="password" required placeholder="비밀번호" autocomplete="current-password">
                 </div>
                 <button type="submit" class="auth-primary-button">로그인</button>
                 <button type="button" class="login-find-button" id="findPasswordButton">비밀번호를 잊으셨나요?</button>
-                <div class="login-divider"></div>
                 <button type="button" class="login-signup-button" id="signupButton">새 계정 만들기</button>
             </form>
+            <img class="login-beta" src="img/Beta icon.png" alt="Beta">
         </section>
     </main>
     <script src="js/auth.js"></script>
