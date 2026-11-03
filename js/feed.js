@@ -179,7 +179,7 @@
         for (const post of posts) {
             const article = document.createElement('article'); article.className = 'feed-post';
             const header = document.createElement('div'); header.className = 'feed-post-header';
-            header.append(textElement('strong', post.author), textElement('span', new Date(post.createdAt).toLocaleString('ko-KR')));
+            header.append(textElement('strong', post.author), textElement('span', new Date(post.createdAt).toLocaleString('ko-KR') + (post.updatedAt ? ' · 수정됨' : '')));
             if (post.authorId === user.id) header.append(button('게시물 삭제', () => change(post.id, (target, actor, all) => {
                 if (target.authorId !== actor.id || !confirm('이 게시물과 댓글을 삭제할까요?')) return false;
                 all.splice(all.indexOf(target), 1);
@@ -188,7 +188,36 @@
                 filesTransaction('readwrite', store => target.media.forEach(media => store.delete(media.id))).catch(() => message('게시물은 삭제되었지만 첨부 파일 정리에 실패했습니다.'));
                 render(); return false;
             })));
-            article.append(header, textElement('p', post.text || ''));
+            const body = textElement('p', post.text || '');
+            article.append(header, body);
+            if (post.authorId === user.id) {
+                const editForm = document.createElement('form'); editForm.className = 'post-edit-form'; editForm.hidden = true;
+                const field = document.createElement('textarea'); field.value = post.text || '';
+                field.setAttribute('aria-label', '게시물 내용 수정');
+                const error = textElement('p', ''); error.setAttribute('role', 'status');
+                const saveButton = document.createElement('button'); saveButton.type = 'submit'; saveButton.textContent = '수정 저장';
+                const editButton = button('게시물 수정', () => {
+                    field.value = post.text || ''; error.textContent = '';
+                    editForm.hidden = false; body.hidden = true; editButton.hidden = true; field.focus();
+                });
+                const cancel = button('수정 취소', () => {
+                    editForm.hidden = true; body.hidden = false; editButton.hidden = false; editButton.focus();
+                });
+                const controls = document.createElement('div'); controls.className = 'post-edit-actions'; controls.append(saveButton, cancel);
+                editForm.append(field, error, controls); header.append(editButton); article.append(editForm);
+                editForm.addEventListener('submit', event => {
+                    event.preventDefault();
+                    const actor = current();
+                    const posts = getPosts(); const target = posts.find(item => item.id === post.id);
+                    if (!target || actor?.id !== target.authorId) { error.textContent = '작성자만 수정할 수 있습니다.'; return; }
+                    const text = field.value.trim();
+                    if (!text && !target.media.length) { error.textContent = '내용 또는 첨부 파일이 있어야 합니다.'; field.focus(); return; }
+                    if (text === (target.text || '')) { editForm.hidden = true; body.hidden = false; editButton.hidden = false; return; }
+                    target.text = text; target.updatedAt = new Date().toISOString();
+                    if (save(posts)) { message('게시물이 수정되었습니다.'); render(); }
+                    else error.textContent = '저장하지 못했습니다. 내용을 유지했으니 다시 시도해주세요.';
+                });
+            }
             const gallery = document.createElement('div'); gallery.className = 'media-grid'; article.append(gallery);
             const actions = document.createElement('div'); actions.className = 'post-actions';
             actions.append(iconButton('heart', post.legacyLikes + post.likedBy.length, post.likedBy.includes(user.id), () => change(post.id, (target, actor) => { target.likedBy = toggle(target.likedBy, actor.id); })),
