@@ -548,3 +548,25 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
 /* 삭제·수정 버튼은 하나의 그룹 안에서 나란히 표시 */
 .post-manage-buttons { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
 .post-manage-buttons button { white-space: nowrap; }
+
+
+/* 댓글 관리, 본문, 수정 폼, 답글을 서로 다른 행으로 배치 */
+.comment-item { display: flex; flex-direction: column; align-items: stretch; gap: 10px; min-width: 0; }
+.comment-header { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; min-width: 0; }
+.comment-author { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.comment-author strong { overflow-wrap: anywhere; }
+.comment-author small { color: #65676b; white-space: nowrap; }
+.comment-actions, .comment-edit-actions, .comment-reply-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.comment-item button { margin: 0; min-height: 44px; max-width: 100%; }
+.comment-actions button, .comment-edit-actions button { white-space: nowrap; }
+.comment-item > .comment-editor { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%; margin: 0; min-width: 0; }
+.comment-editor input { flex: none; width: 100%; min-width: 0; min-height: 46px; border-radius: 8px; }
+.comment-edit-actions { justify-content: flex-end; }
+.comment-edit-actions button[type="submit"] { background: #1d84eb; color: #fff; }
+.comment-item > .feed-comments:not(.comment-editor) { margin-top: 0; flex-wrap: wrap; }
+.comment-item > .feed-comments:not(.comment-editor) input { flex-basis: 160px; }
+@media (max-width: 480px) {
+    .comment-header { flex-direction: column; align-items: flex-start; }
+    .comment-actions { width: 100%; }
+    .comment-edit-actions button { flex: 1 1 90px; }
+}
