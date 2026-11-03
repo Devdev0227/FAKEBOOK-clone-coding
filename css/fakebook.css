@@ -544,3 +544,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
 .post-edit-form [role="status"] { color: #b42318; font-size: 14px; margin-top: 8px; }
 .post-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .post-edit-actions button[type="submit"] { background: #1d84eb; color: white; }
+
+/* 삭제·수정 버튼은 하나의 그룹 안에서 나란히 표시 */
+.post-manage-buttons { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.post-manage-buttons button { white-space: nowrap; }

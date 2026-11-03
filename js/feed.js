@@ -180,7 +180,9 @@
             const article = document.createElement('article'); article.className = 'feed-post';
             const header = document.createElement('div'); header.className = 'feed-post-header';
             header.append(textElement('strong', post.author), textElement('span', new Date(post.createdAt).toLocaleString('ko-KR') + (post.updatedAt ? ' · 수정됨' : '')));
-            if (post.authorId === user.id) header.append(button('게시물 삭제', () => change(post.id, (target, actor, all) => {
+            const manageButtons = document.createElement('div'); manageButtons.className = 'post-manage-buttons';
+            if (post.authorId === user.id) header.append(manageButtons);
+            if (post.authorId === user.id) manageButtons.append(button('게시물 삭제', () => change(post.id, (target, actor, all) => {
                 if (target.authorId !== actor.id || !confirm('이 게시물과 댓글을 삭제할까요?')) return false;
                 all.splice(all.indexOf(target), 1);
                 // 메타데이터 저장 성공 후에만 파일을 정리합니다.
@@ -204,7 +206,7 @@
                     editForm.hidden = true; body.hidden = false; editButton.hidden = false; editButton.focus();
                 });
                 const controls = document.createElement('div'); controls.className = 'post-edit-actions'; controls.append(saveButton, cancel);
-                editForm.append(field, error, controls); header.append(editButton); article.append(editForm);
+                editForm.append(field, error, controls); manageButtons.append(editButton); article.append(editForm);
                 editForm.addEventListener('submit', event => {
                     event.preventDefault();
                     const actor = current();
