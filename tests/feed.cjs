@@ -28,7 +28,7 @@ const submit = (form, text) => { form.children[0].value = text; form.events.subm
     icon('heart').click(); assert.equal(posts()[0].likedBy.length, 1); assert.equal(icon('heart').attrs['aria-pressed'], 'true');
     icon('heart').click(); assert.equal(posts()[0].likedBy.length, 0);
     icon('bookmark').click(); assert.deepEqual(posts()[0].savedBy, ['alice']);
-    submit(find(n => n.tagName === 'form'), 'old comment');
+    submit(find(n => n.tagName === 'form' && n.className === 'feed-comments'), 'old comment');
     load(); // 기존 댓글 데이터로 다시 시작
     click('답글 달기 (0)');
     const row = find(n => n.className === 'comment-item');
@@ -37,13 +37,29 @@ const submit = (form, text) => { form.children[0].value = text; form.events.subm
     icon('heart', 2).click(); assert.equal(posts()[0].comments[0].replies[0].likedBy.length, 1);
     icon('heart', 2).click(); assert.equal(posts()[0].comments[0].replies[0].likedBy.length, 0);
     load(); assert.equal(find(n => n.className === 'comment-item reply-item').children[1].textContent, '<script>reply</script>');
-    login('bob'); handlers.storage({key: 'fakebookCurrentUser'});
-    assert(!walk(nodes.localPosts).some(n => n.textContent === '답글 삭제'));
+    const original = posts()[0];
+    click('게시물 수정');
+    let editor = find(n => n.className === 'post-edit-form');
+    assert.equal(editor.children[0].value, 'post');
+    submit(editor, ''); assert.equal(posts()[0].text, 'post');
+    submit(editor, 'discard'); // save first edit
+    click('게시물 수정'); editor = find(n => n.className === 'post-edit-form'); editor.children[0].value = 'cancelled';
+    click('수정 취소'); assert.equal(posts()[0].text, 'discard');
+    click('게시물 수정'); editor = find(n => n.className === 'post-edit-form');
+    const staleEditor = editor;
+    submit(editor, '<b>updated</b>');
+    assert.equal(posts()[0].text, '<b>updated</b>'); assert(posts()[0].updatedAt);
+    assert.deepEqual(posts()[0].comments, original.comments); assert.deepEqual(posts()[0].savedBy, original.savedBy);
+    assert.deepEqual(posts()[0].likedBy, original.likedBy); assert.deepEqual(posts()[0].media, original.media);
+    load(); assert(walk(nodes.localPosts).some(n => n.textContent === '<b>updated</b>'));
+    login('bob'); submit(staleEditor, 'unauthorized'); assert.equal(posts()[0].text, '<b>updated</b>');
+    handlers.storage({key: 'fakebookCurrentUser'});
+    assert(!walk(nodes.localPosts).some(n => ['답글 삭제', '게시물 수정'].includes(n.textContent)));
     context.location.hash = '#saved'; handlers.hashchange(); assert.equal(nodes.localPosts.children[0].textContent, '저장한 게시물이 없습니다.');
     login('alice'); context.location.hash = ''; handlers.hashchange();
     click('답글 삭제'); assert.equal(posts()[0].comments[0].replies.length, 0);
     click('답글 달기 (0)'); submit(find(n => n.className === 'comment-item').children.find(n => n.tagName === 'form'), 'second reply');
     context.confirm = () => false; click('댓글 삭제'); assert.equal(posts()[0].comments.length, 1);
     context.confirm = () => true; click('댓글 삭제'); assert.equal(posts()[0].comments.length, 0);
-    console.log('PASS: icon toggles, replies on existing comments, reply likes/delete, reload, ownership, bookmark isolation, parent deletion/cancel');
+    console.log('PASS: post edit/save/cancel/empty validation/persistence/ownership, preservation of interactions, icon toggles, replies on existing comments, reply likes/delete, reload, ownership, bookmark isolation, parent deletion/cancel');
 })().catch(error => { console.error(error); process.exitCode = 1; });

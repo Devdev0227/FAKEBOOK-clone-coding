@@ -536,3 +536,11 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
         white-space: nowrap;
     }
 }
+
+/* 게시물 본문 수정 */
+.post-edit-form { margin: 12px 0; }
+.post-edit-form textarea { display: block; width: 100%; min-height: 120px; resize: vertical; padding: 12px; border: 1px solid #ccd0d5; border-radius: 6px; font-size: 16px; }
+.post-edit-form textarea:focus { outline: 2px solid #166fe5; outline-offset: 2px; }
+.post-edit-form [role="status"] { color: #b42318; font-size: 14px; margin-top: 8px; }
+.post-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.post-edit-actions button[type="submit"] { background: #1d84eb; color: white; }
