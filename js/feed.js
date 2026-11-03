@@ -125,7 +125,9 @@
     const newComment = (actor, text) => ({id: uid(), authorId: actor.id, author: actor.name, text, likedBy: [], createdAt: new Date().toISOString()});
     function commentRow(postId, comment, user, parentId = null) {
         const row = document.createElement('div'); row.className = parentId === null ? 'comment-item' : 'comment-item reply-item';
-        row.append(textElement('strong', comment.author), textElement('p', comment.text));
+        const body = textElement('p', comment.text);
+        row.append(textElement('strong', comment.author), body);
+        if (comment.updatedAt) row.append(textElement('small', '수정됨'));
         const find = post => parentId === null ? post.comments : (post.comments.find(item => item.id === parentId)?.replies || []);
         const liked = comment.likedBy || [];
         row.append(iconButton('heart', liked.length, liked.includes(user.id), () => change(postId, (post, actor) => {
@@ -137,6 +139,53 @@
             if (index < 0 || !confirm(parentId === null ? '이 댓글과 달린 답글을 모두 삭제할까요?' : '이 답글을 삭제할까요?')) return false;
             list.splice(index, 1);
         })));
+        if (comment.authorId === user.id) {
+            const label = parentId === null ? '댓글' : '답글';
+            const editor = document.createElement('form');
+            editor.className = 'feed-comments comment-editor';
+            editor.hidden = true;
+            const field = document.createElement('input');
+            field.setAttribute('aria-label', `${label} 수정 내용`);
+            field.required = true;
+            field.maxLength = 2000;
+            const submit = document.createElement('button');
+            submit.type = 'submit';
+            submit.textContent = '수정 저장';
+            const editButton = button(`${label} 수정`, () => {
+                field.value = comment.text;
+                editor.hidden = false;
+                body.hidden = true;
+                editButton.hidden = true;
+                field.focus();
+            });
+            const cancel = button('수정 취소', () => {
+                editor.hidden = true;
+                body.hidden = false;
+                editButton.hidden = false;
+                editButton.focus();
+            });
+            editor.append(field, submit, cancel);
+            editor.addEventListener('submit', event => {
+                event.preventDefault();
+                const text = field.value.trim();
+                if (!text || text.length > 2000) {
+                    message('수정 내용은 공백을 제외하고 1~2,000자로 입력해주세요.');
+                    return;
+                }
+                change(postId, (post, actor) => {
+                    const target = find(post).find(item => item.id === comment.id);
+                    if (!target || target.authorId !== actor.id) {
+                        message('본인이 작성한 댓글과 답글만 수정할 수 있습니다.');
+                        return false;
+                    }
+                    if (target.text !== text) {
+                        target.text = text;
+                        target.updatedAt = new Date().toISOString();
+                    }
+                });
+            });
+            row.append(editButton, editor);
+        }
         if (parentId === null) {
             const replies = document.createElement('div'); replies.className = 'reply-list';
             const form = commentForm('답글', text => change(postId, (post, actor) => {
