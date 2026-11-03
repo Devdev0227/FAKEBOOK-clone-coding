@@ -3,63 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fakebook</title>
+    <title>FAKEBOOK 로그인</title>
     <link rel="stylesheet" href="css/fakebook.css">
 </head>
-<body>
-    <div class="page">
-
-        <nav class="navbar">
-            <div class="brand">
-                <img src="./img/FakebookLogo2.png" alt="Fakebook 로고">
-                <h2>FAKEBOOK</h2>
-            </div>
-
-            <main class="content">
-                <section class="left"></section>
-                <aside class="right"></aside>
-            </main>
-        </nav>
-
-        <div class="textcontainer">
-            <h1 class="text0">취향 저격</h1>
-            <h1 class="text1">다양한 콘텐츠를</h1>
-            <h1 class="text2">만나는 곳</h1>
-        </div>
-
-        <div class="logincontainer">
+<body class="login-page">
+    <header class="login-header">
+        <a class="brand" href="index.html"><img src="img/FakebookLogo2.png" alt=""><span>FAKEBOOK</span></a>
+        <img class="beta-badge" src="img/Beta icon.png" alt="Beta">
+    </header>
+    <main class="login-layout">
+        <section class="login-intro" aria-labelledby="introTitle">
+            <h1 id="introTitle"><span>취향 저격</span><br>다양한 콘텐츠를<br>만나는 곳</h1>
+            <img class="login-illustration" src="img/mainimage.png" alt="Fakebook 메인 이미지">
+        </section>
+        <section class="login-card" aria-labelledby="loginTitle">
             <form id="loginForm" action="#" method="POST">
-
-                <h3>FAKEBOOK에 로그인</h3>
-
-                <p class="idinput">
-                    <label for="name"></label>
+                <h2 id="loginTitle">FAKEBOOK에 로그인</h2>
+                <div class="field-group">
+                    <label for="name">아이디</label>
                     <input type="text" name="name" id="name" required placeholder="아이디" autocomplete="username">
-                </p>
-
-                <p class="pwinput">
-                    <label for="password"></label>
+                </div>
+                <div class="field-group">
+                    <label for="password">비밀번호</label>
                     <input type="password" name="password" id="password" required placeholder="비밀번호" autocomplete="current-password">
-                </p>
-
-                <button type="submit" class="loginbutton1">로그인</button>
-                <button type="button" class="loginbutton2" id="findPasswordButton">비밀번호를 잊으셨나요?</button>
-                <button type="button" class="loginbutton3" id="signupButton">새 계정 만들기</button>
-
+                </div>
+                <button type="submit" class="auth-primary-button">로그인</button>
+                <button type="button" class="login-find-button" id="findPasswordButton">비밀번호를 잊으셨나요?</button>
+                <div class="login-divider"></div>
+                <button type="button" class="login-signup-button" id="signupButton">새 계정 만들기</button>
             </form>
-        </div>
-
-        <div class="icon">
-            <img class="Betaicon" src="./img/Beta icon.png" alt="Beta 로고">
-        </div>
-
-        <div class="icon">
-            <img class="mainimage" src="./img/mainimage.png" alt="Fakebook 메인 이미지">
-        </div>
-
-    </div>
-
+        </section>
+    </main>
     <script src="js/auth.js"></script>
-    
 </body>
 </html>
