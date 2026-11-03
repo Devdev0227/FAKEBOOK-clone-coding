@@ -480,9 +480,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
 /* 원래 로그인 화면의 흰 배경과 여백, 테두리 버튼 유지 */
 .login-page { background: #fff; color: #000; }
 .login-page .login-layout { width: min(1440px, calc(100% - 64px)); grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 80px); }
-.login-page .login-intro { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); align-self: center; }
-.login-page .login-illustration { grid-area: 1 / 1; width: 88%; max-width: 620px; margin: 0 0 64px auto; align-self: start; }
-.login-page .login-intro h1 { grid-area: 1 / 1; z-index: 1; align-self: end; justify-self: start; font-size: clamp(28px, 3vw, 44px); line-height: 1.5; letter-spacing: -1px; text-align: left; }
+.login-page .login-intro { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 20px; align-self: center; }
+.login-page .login-illustration { grid-area: 1 / 1; width: 72%; max-width: 420px; height: auto; margin: 0 0 0 auto; align-self: start; }
+.login-page .login-intro h1 { grid-area: 2 / 1; align-self: end; justify-self: start; font-size: clamp(28px, 3vw, 44px); line-height: 1.5; letter-spacing: -1px; text-align: left; }
 .login-page .login-card { max-width: 540px; padding: 20px 0; border: 0; border-radius: 0; box-shadow: none; }
 .login-page .login-card form { gap: 0; }
 .login-page .login-card h2 { font-size: clamp(22px, 2.2vw, 30px); color: #000; margin-bottom: 20px; }
@@ -501,7 +501,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
 @media (max-width: 760px) {
     .login-page .login-layout { width: min(540px, calc(100% - 40px)); grid-template-columns: minmax(0, 1fr); gap: 24px; }
     .login-page .login-intro { width: 100%; }
-    .login-page .login-illustration { width: 78%; max-width: 340px; margin: 0 0 56px auto; }
+    .login-page .login-illustration { width: 64%; max-width: 260px; margin: 0 0 0 auto; }
     .login-page .login-intro h1 { font-size: clamp(24px, 5.2vw, 32px); }
     .login-page .login-card { padding: 0 0 24px; }
     .login-page .login-find-button { margin: 24px 0 36px; }
