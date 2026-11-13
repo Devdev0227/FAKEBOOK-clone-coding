@@ -202,7 +202,8 @@
     }
     let selectedHomeIds = null;
     function homePostIds(posts) {
-        if (!selectedHomeIds) selectedHomeIds = activity.selectHomePosts(posts);
+        activity.ensureHomeNegative(posts, actor()?.id);
+        selectedHomeIds = activity.selectHomePosts(posts, 10, selectedHomeIds);
         // 새로 작성한 실제 글과도 같은 내용이 겹치지 않게 합니다.
         const seen = new Set(posts.filter(p=>!p.demo).map(p=>String(p.text || '').trim().replace(/\s+/g,' ')));
         return selectedHomeIds.filter(id=> {
@@ -237,6 +238,7 @@
     window.addEventListener('pagehide', () => { if (timer !== undefined) window.clearInterval(timer); });
     render();
 })();
+
 
 
 
