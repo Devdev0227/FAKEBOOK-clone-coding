@@ -164,6 +164,47 @@ if (signupForm) {
 }
 
 // ------------------------------
+// 아이디 찾기: 회원가입 이름 + 전화번호 확인 (조회만 수행)
+// ------------------------------
+const findIdForm = document.querySelector("#findIdForm");
+if (findIdForm) {
+    const result = document.querySelector("#findIdResult");
+    const foundId = document.querySelector("#foundId");
+    const message = document.querySelector("#findIdMessage");
+    const clearResult = () => {
+        result.hidden = true;
+        foundId.textContent = "";
+        message.textContent = "";
+        message.className = "auth-error";
+    };
+    findIdForm.addEventListener("input", clearResult);
+    findIdForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        clearResult();
+        const name = document.querySelector("#findIdName").value.trim();
+        const phone = document.querySelector("#findIdPhone").value.trim();
+        if (name.length < 2) {
+            message.textContent = "회원가입할 때 입력한 이름을 2글자 이상 입력해주세요.";
+            return;
+        }
+        if (!isValidPhone(phone)) {
+            message.textContent = "전화번호는 '-' 없이 숫자 10~11자리로 입력해주세요.";
+            return;
+        }
+        const users = getUsers();
+        const user = (Array.isArray(users) ? users : []).find(item => item && typeof item.id === "string" && item.id && item.name === name && item.phone === phone);
+        if (!user) {
+            message.textContent = "일치하는 회원정보를 찾을 수 없습니다.";
+            return;
+        }
+        foundId.textContent = user.id;
+        result.hidden = false;
+        message.className = "auth-success";
+        message.textContent = `가입한 아이디는 ${user.id}입니다.`;
+    });
+}
+
+// ------------------------------
 // 비밀번호 찾기: 이름 + 전화번호 확인
 // ------------------------------
 const findPasswordForm = document.querySelector("#findPasswordForm");
@@ -263,5 +304,6 @@ if (logoutButton) {
         location.href = "index.html";
     });
 }
+
 
 

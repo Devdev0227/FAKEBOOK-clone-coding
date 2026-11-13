@@ -27,7 +27,11 @@
                     <input type="password" name="password" id="password" required placeholder="비밀번호" autocomplete="current-password">
                 </div>
                 <button type="submit" class="auth-primary-button">로그인</button>
-                <button type="button" class="login-find-button" id="findPasswordButton">비밀번호를 잊으셨나요?</button>
+                <div class="login-recovery-links" aria-label="계정 찾기">
+                    <a class="login-find-button" href="find-id.html">아이디 찾기</a>
+                    <span aria-hidden="true">|</span>
+                    <button type="button" class="login-find-button" id="findPasswordButton">비밀번호 찾기</button>
+                </div>
                 <button type="button" class="login-signup-button" id="signupButton">새 계정 만들기</button>
             </form>
             <img class="login-beta" src="img/Beta icon.png" alt="Beta">
@@ -36,3 +40,4 @@
     <script src="js/auth.js"></script>
 </body>
 </html>
+
