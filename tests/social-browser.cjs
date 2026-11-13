@@ -43,8 +43,8 @@ const assert = require('node:assert/strict');
  assert.equal(await page.locator('#welcomeName').textContent(),'정연 테스트님');
  assert((await page.locator('.profile-detail img').getAttribute('src')).startsWith('data:image/jpeg'));
  await page.getByRole('link',{name:'홈',exact:true}).click();
- assert.equal(await page.locator('.author-profile strong').count(),3);
- assert.deepEqual(await page.locator('.author-profile strong').allTextContents(),['정연 테스트','정연 테스트','정연 테스트']);
+ assert.equal(await page.locator('.feed-post').filter({hasText:'기존 게시물'}).locator('.author-profile strong').count(),3);
+ assert.deepEqual(await page.locator('.feed-post').filter({hasText:'기존 게시물'}).locator('.author-profile strong').allTextContents(),['정연 테스트','정연 테스트','정연 테스트']);
  await page.reload(); assert.equal(await page.locator('#welcomeName').textContent(),'정연 테스트님');
  await page.getByRole('button',{name:'게시물 수정',exact:true}).click(); await page.getByLabel('게시물 내용 수정').fill('수정 확인');
  await page.getByRole('button',{name:'수정 저장',exact:true}).click();
@@ -68,4 +68,5 @@ const assert = require('node:assert/strict');
  assert.deepEqual(errors,[]); await browser.close();
  console.log('PASS: friend add/remove/dismiss/restore, requests, search, profile links, upload/save/cancel/reload, author migration and profile propagation, account isolation, 320/390/768/1440px overflow checks; no browser errors');
 })().catch(e=>{console.error(e);process.exit(1)});
+
 

@@ -20,7 +20,7 @@ store.set('fakebookFriends:alice',JSON.stringify({friends:[],dismissed:[],reques
 vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../js/ambient.js'),'utf8'),context);
 const source=fs.readFileSync(path.join(__dirname,'../js/social.js'),'utf8');vm.runInNewContext(source,context);
 const rows=()=>all().filter(n=>n.className==='friend-row');const state=()=>JSON.parse(store.get('fakebookFriends:alice'));
-assert.equal(rows().length,10);const seeded=store.get('fakebookDummyProfiles');fire();assert.equal(store.get('fakebookDummyProfiles'),seeded);
+assert.equal(rows().length,10);assert.equal(new Set(rows().map(row=>walk(row).find(n=>n.tagName==='img').src)).size,rows().length);const seeded=store.get('fakebookDummyProfiles');fire();assert.equal(store.get('fakebookDummyProfiles'),seeded);
 walk(rows()[0]).find(n=>n.textContent==='친구 추가').click();assert.equal(state().friends.length,1);
 find('모든 친구 (1)').click();assert.equal(rows().length,1);
 find('친구 삭제').click();assert.equal(state().friends.length,0);
@@ -42,7 +42,9 @@ go('#friends');find('모든 친구 (0)').click();assert.equal(rows().length,0);a
 go('#home');assert.equal(feed.hidden,false);assert.equal(nodes.socialPanel.hidden,true);assert.equal(nodes.homeLink.attrs['aria-current'],'page');go('#saved');assert.equal(nodes.savedLink.attrs['aria-current'],'page');
 nodes.sidebarAvatar.onerror();assert.equal(nodes.sidebarAvatar.src,'img/default-avatar.svg');assert.equal(nodes.sidebarAvatar.onerror,null);
 const failed=window.FakebookSocial.author('demo-3','가상 친구').children[0];failed.onerror();assert.equal(failed.src,'img/default-avatar.svg');assert.equal(failed.onerror,null);
+const homeData=JSON.parse(store.get('fakebookPosts'));const selection=window.FakebookSocial.homePostIds(homeData);assert.deepEqual(window.FakebookSocial.homePostIds(homeData),selection);homeData[0].comments.push({text:'추가 댓글'});assert.deepEqual(window.FakebookSocial.homePostIds(homeData),selection);
 store.delete('fakebookCurrentUser');window.dispatchEvent({type:'storage',key:'fakebookCurrentUser'});assert.equal(context.location.href,'index.html');
 console.log('PASS: seeded profile persistence; friend add/remove, request accept/reject, dismiss/restore/search; profile validation/save/cancel/quota failure; display name/author links; account isolation and stale form guard; routes and logout');
+
 
 

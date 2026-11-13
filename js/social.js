@@ -92,9 +92,9 @@
         const title = el('h2'); const list = el('div', undefined, 'friend-list');
         const populate = () => {
             title.textContent = mode === 'suggestions' ? '알 수도 있는 사람' : mode === 'requests' ? '친구 요청' : '모든 친구';
-            const people = dummies.filter(p => (mode === 'all' ? s.friends.includes(p.id) : mode === 'requests' ? s.requests.includes(p.id) : !s.friends.includes(p.id) && !s.requests.includes(p.id) && !s.dismissed.includes(p.id)) && p.name.includes(search.trim()))
+            let people = dummies.filter(p => (mode === 'all' ? s.friends.includes(p.id) : mode === 'requests' ? s.requests.includes(p.id) : !s.friends.includes(p.id) && !s.requests.includes(p.id) && !s.dismissed.includes(p.id)) && p.name.includes(search.trim()))
                 .sort((a,b) => recommendationOrder.indexOf(a.id) - recommendationOrder.indexOf(b.id));
-            if (mode === 'suggestions') people.splice(activity.limits.recommendations);
+            if (mode === 'suggestions') people = activity.recommendations(people);
             list.replaceChildren();
             for (const person of people) {
                 const row = el('article', undefined, 'friend-row');
@@ -199,7 +199,18 @@
         panel.append(notice);
         window.dispatchEvent(new Event('fakebook:social-render'));
     }
-    window.FakebookSocial = {profile, author, isFeed, profileId, notify: text => { if (!isFeed()) notice.textContent = text; }};
+    let selectedHomeIds = null;
+    function homePostIds(posts) {
+        if (!selectedHomeIds) selectedHomeIds = activity.selectHomePosts(posts);
+        // 새로 작성한 실제 글과도 같은 내용이 겹치지 않게 합니다.
+        const seen = new Set(posts.filter(p=>!p.demo).map(p=>String(p.text || '').trim().replace(/\s+/g,' ')));
+        return selectedHomeIds.filter(id=> {
+            const post = posts.find(p=>p.id===id); if (!post) return false;
+            const key = String(post.text || '').trim().replace(/\s+/g,' ');
+            if (seen.has(key)) return false; seen.add(key); return true;
+        });
+    }
+    window.FakebookSocial = {profile, author, isFeed, profileId, homePostIds, notify: text => { if (!isFeed()) notice.textContent = text; }};
     window.addEventListener('hashchange', render);
     window.addEventListener('fakebook:profile', render);
     window.addEventListener('storage', event => { if (!event.key || (['fakebookProfiles', 'fakebookCurrentUser', 'fakebookUsers'].includes(event.key) || event.key.startsWith('fakebookFriends:'))) render(); });
@@ -225,6 +236,7 @@
     window.addEventListener('pagehide', () => { if (timer !== undefined) window.clearInterval(timer); });
     render();
 })();
+
 
 
 
