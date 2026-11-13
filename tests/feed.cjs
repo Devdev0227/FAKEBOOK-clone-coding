@@ -94,6 +94,11 @@ const submit = (form, text) => { form.children[0].value = text; form.events.subm
     click('답글 달기 (0)'); submit(find(n => n.className === 'comment-item').children.find(n => n.className === 'feed-comments'), 'second reply');
     context.confirm = () => false; click('댓글 삭제'); assert.equal(posts()[0].comments.length, 1);
     context.confirm = () => true; click('댓글 삭제'); assert.equal(posts()[0].comments.length, 0);
+    const fixture={id:'emoji-demo',demo:true,authorId:'demo-1',author:'가상 친구',text:'산책 기록',emojiVersion:1,emoji:'🌿',createdAt:new Date().toISOString(),comments:[{id:'emoji-comment',authorId:'demo-2',author:'다른 친구',text:'기록 잘 봤어.',emojiVersion:1,emoji:'🙂',likedBy:[]}]};
+    context.window.FakebookSocial={profile:(id,name)=>({name:name||id}),author:(id,name)=>{const node=new Element('strong');node.textContent=name;return node;},isFeed:()=>true,homePostIds:()=>['emoji-demo']};
+    store.set('fakebookPosts',JSON.stringify([fixture]));handlers.hashchange();
+    assert(walk(nodes.localPosts).some(n=>n.textContent==='산책 기록 🌿'));assert(walk(nodes.localPosts).some(n=>n.textContent==='기록 잘 봤어. 🙂'));assert.equal(posts()[0].text,'산책 기록');assert.equal(posts()[0].comments[0].text,'기록 잘 봤어.');
     console.log('PASS: comment/reply edit validation, cancel, persistence, ownership and interaction preservation; post edit/save/cancel/empty validation/persistence/ownership, preservation of interactions, icon toggles, replies on existing comments, reply likes/delete, reload, ownership, bookmark isolation, parent deletion/cancel');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
 

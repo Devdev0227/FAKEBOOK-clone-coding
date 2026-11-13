@@ -679,8 +679,209 @@
         {id:'topic:tidying', patterns:[/방 정리|책상 정리|방을 정리|책상을 정리/,/끝냈|마쳤|했더니|완료/],negative:'정리한 걸 굳이 성과처럼 쓸 필요가 있나.',defense:'공간을 정리하고 기분이 좋아졌을 수 있지. 작은 변화도 나눌 수 있어.'},
         {id:'topic:code', patterns:[/코드|프로그램|버그/,/해결했|고쳤|돌아간다|실행됐/],negative:'코드 고친 일까지 그렇게 기뻐할 만한가.',defense:'막혔던 문제를 해결하면 기쁠 수 있지. 해결한 노력을 가볍게 보진 말자.'}
     ];
-    const NEGATIVE_COMMENTS = [...TEMPLATE_PAIRS,...OWN_PAIRS].map(pair=>pair.negative);
-    const DEFENSE_COMMENTS = [...TEMPLATE_PAIRS,...OWN_PAIRS].map(pair=>pair.defense);
+    const POSITIVE_COMMENTS = {
+    "general": [
+        "글 잘 읽고 가요.",
+        "이야기 나눠줘서 고마워.",
+        "소식 남겨줘서 반가워.",
+        "오늘의 기록도 잘 봤어.",
+        "가끔 이렇게 근황 알려줘.",
+        "편하게 이야기 나눌 수 있어서 좋네.",
+        "네 이야기에 잠깐 귀 기울이고 가.",
+        "다음 이야기도 기다릴게.",
+        "시간 내서 읽고 있어.",
+        "일상을 나눠줘서 고마워.",
+        "네 페이스대로 지내길 바라.",
+        "여기서 소식 들을 수 있어 좋다.",
+        "오늘도 응원하고 갈게.",
+        "생각을 적어줘서 고마워.",
+        "짧은 글이어도 잘 읽었어.",
+        "이렇게 기록이 하나씩 쌓이는구나.",
+        "잠깐 들러서 이야기 읽고 가요.",
+        "편안한 하루가 되길 바라.",
+        "앞으로도 종종 소식 전해줘.",
+        "읽으면서 잠시 생각해봤어.",
+        "나눠준 이야기를 기억해둘게.",
+        "네 일상이 궁금했는데 반가워.",
+        "자신에게 맞는 속도로 이어가면 좋겠다.",
+        "글 남겨줘서 고마워요."
+    ],
+    "media": [
+        "첨부한 내용도 함께 잘 봤어.",
+        "이야기랑 첨부를 같이 볼 수 있어 좋네.",
+        "파일까지 함께 남겨줘서 고마워.",
+        "첨부도 넘겨보며 확인했어.",
+        "기록을 이렇게 함께 나눌 수 있구나.",
+        "첨부한 자료도 보고 가요.",
+        "글과 함께 올린 내용도 잘 확인했어.",
+        "다음 기록도 이렇게 나눠줘."
+    ],
+    "running": [
+        "달리기 기록을 이어가는 거 응원해.",
+        "뛰고 나서는 편하게 쉬어줘.",
+        "다치지 않고 꾸준히 달리길 바라."
+    ],
+    "cooking": [
+        "직접 만든 음식이라 더 의미 있겠다.",
+        "요리하고 정리하느라 수고했어.",
+        "만드는 과정도 나중에 들려줘."
+    ],
+    "travel": [
+        "다녀온 곳의 이야기가 궁금하다.",
+        "여행 기억이 오래 좋은 힘이 되면 좋겠어.",
+        "다음 여행 이야기도 들려줘."
+    ],
+    "study": [
+        "끝내고 나니 마음이 한결 가볍겠다.",
+        "공부 마무리하느라 수고 많았어.",
+        "잠깐 쉬면서 뿌듯함도 챙겨."
+    ],
+    "reading": [
+        "완독하고 남은 생각도 궁금해.",
+        "책을 끝까지 읽은 거 응원해.",
+        "마음에 남은 부분도 나중에 알려줘."
+    ],
+    "film": [
+        "영화 보고 남은 감상이 궁금하다.",
+        "기억에 남는 장면도 들려줘.",
+        "다음에 볼 영화도 정했어?"
+    ],
+    "tidying": [
+        "정리하고 나면 공간이 한결 편해지지.",
+        "정돈한 공간에서 편히 쉬길 바라.",
+        "정리 마무리하느라 수고했어."
+    ],
+    "code": [
+        "막힌 부분을 해결했다니 축하해.",
+        "코드가 돌아가는 순간 정말 시원하지.",
+        "어떻게 해결했는지도 나중에 들려줘."
+    ]
+};
+    const OWN_EXTRA_PAIRS = {
+    "running": [
+        [
+            "달리기 기록도 다 비슷해서 새로울 게 없네.",
+            "기록이 비슷해 보여도 달린 사람에게는 매번 의미가 있지. 꾸준함을 존중해주자."
+        ],
+        [
+            "러닝한 걸 굳이 소식으로 남겨야 하나.",
+            "달린 날을 기록하며 동기부여를 받을 수 있잖아. 소식을 나누는 방식은 다를 수 있어."
+        ]
+    ],
+    "cooking": [
+        [
+            "요리 한 번 했다고 이렇게 알릴 일인가.",
+            "직접 만들고 나눈 즐거움을 적은 거잖아. 요리를 평가하자는 글은 아니지."
+        ],
+        [
+            "직접 만든 음식이라는 얘기도 흔한 것 같네.",
+            "흔한 경험이어도 만든 사람에게는 보람이 있지. 작은 즐거움도 나눌 수 있어."
+        ]
+    ],
+    "travel": [
+        [
+            "여행 다녀왔다는 얘기는 매번 비슷하네.",
+            "같은 여행지라도 각자의 추억은 다르지. 다녀온 이야기를 나눌 수는 있잖아."
+        ],
+        [
+            "다녀온 곳 얘기를 굳이 이렇게 남겨야 하나.",
+            "여행을 기록하고 싶을 수도 있지. 필요한 기록인지 대신 정할 필요는 없잖아."
+        ]
+    ],
+    "study": [
+        [
+            "공부 끝냈다는 것까지 소식으로 올리네.",
+            "끝내고 마음이 가벼워진 걸 나눌 수 있지. 다른 사람의 수고를 작게 보진 말자."
+        ],
+        [
+            "과제나 공부를 마친 건 누구나 하는 일인데.",
+            "누구나 할 수 있는 일이어도 끝내기까지 노력은 들어가지. 서로 격려해주면 좋겠어."
+        ]
+    ],
+    "reading": [
+        [
+            "완독했다는 말만으로는 별 내용이 없네.",
+            "다 읽었다는 기록부터 남길 수도 있지. 감상을 길게 써야만 하는 건 아니잖아."
+        ],
+        [
+            "책 한 권 끝낸 걸 굳이 알릴 필요가 있나.",
+            "독서를 이어가는 동기가 될 수도 있잖아. 자기 기록을 남기는 건 괜찮지."
+        ]
+    ],
+    "film": [
+        [
+            "영화 봤다는 얘기가 뭐 그렇게 새롭겠어.",
+            "새로운 정보만 올려야 하는 건 아니잖아. 보고 느낀 걸 나눌 수 있지."
+        ],
+        [
+            "영화 감상 하나까지 올리는 건 유난 같네.",
+            "개인의 감상을 적는 공간이잖아. 유난이라고 단정할 필요는 없을 것 같아."
+        ]
+    ],
+    "tidying": [
+        [
+            "정리 끝냈다는 말도 굳이 올려야 하나.",
+            "정리하고 기분이 좋아진 걸 기록할 수 있지. 사소한 변화도 공유할 수 있어."
+        ],
+        [
+            "공간 좀 정리한 걸 크게 말하는 느낌이네.",
+            "정리에 들인 수고는 본인이 잘 알잖아. 다른 사람의 보람을 작게 보지는 말자."
+        ]
+    ],
+    "code": [
+        [
+            "코드 한 번 고친 걸 소식으로 남기네.",
+            "문제를 해결한 기록을 남기면 도움이 되지. 해결한 기쁨도 나눌 수 있어."
+        ],
+        [
+            "프로그램 돌아간다는 얘기도 늘 비슷하네.",
+            "겉으로 비슷해 보여도 해결한 문제는 다를 수 있지. 노력까지 똑같다고 보진 말자."
+        ]
+    ]
+};
+    const OWN_GENERAL_PAIRS = [
+    {
+        "id": "own:general",
+        "negative": "굳이 이런 얘기까지 올릴 필요가 있나 싶네.",
+        "defense": "자기 일상을 기록할 수 있는 공간이잖아. 올릴 필요가 없다고 단정하진 말자."
+    },
+    {
+        "id": "own:general:2",
+        "negative": "이 정도 이야기는 그냥 넘겨도 될 것 같은데.",
+        "defense": "크고 특별한 일만 나눠야 하는 건 아니잖아. 각자의 기록을 존중해주자."
+    },
+    {
+        "id": "own:general:3",
+        "negative": "생각보다 특별한 얘기는 아니네.",
+        "defense": "특별한 이야기인지 평가받으려고 올린 건 아닐 수 있지. 편하게 나눌 수는 있잖아."
+    },
+    {
+        "id": "own:general:4",
+        "negative": "이런 근황까지 다 알릴 필요는 없어 보인다.",
+        "defense": "근황을 얼마나 나눌지는 본인이 정할 수 있지. 보고 싶지 않으면 지나가면 되잖아."
+    },
+    {
+        "id": "own:general:5",
+        "negative": "개인적인 기록은 혼자 남겨도 되는 것 아닌가.",
+        "defense": "함께 나누고 싶은 기록도 있잖아. 개인적인 이야기라는 이유로 밀어낼 필요는 없지."
+    },
+    {
+        "id": "own:general:6",
+        "negative": "내용이 좀 사소하게 느껴지는데.",
+        "defense": "사소해 보여도 당사자에게는 의미가 있을 수 있어. 가볍게 존중해주면 좋겠어."
+    }
+];
+    const OWN_COMMENT_PAIRS = [...OWN_PAIRS.flatMap(pair=>[pair,...OWN_EXTRA_PAIRS[pair.id.split(':')[1]].map(([negative,defense],i)=>({id:`${pair.id}:${i+2}`,negative,defense}))]),...OWN_GENERAL_PAIRS];
+    const NEGATIVE_COMMENTS = [...TEMPLATE_PAIRS,...OWN_COMMENT_PAIRS].map(pair=>pair.negative);
+    const DEFENSE_COMMENTS = [...TEMPLATE_PAIRS,...OWN_COMMENT_PAIRS].map(pair=>pair.defense);
+    const SECONDARY_DEFENSES = [
+    "같은 경험도 사람마다 의미가 다를 수 있지. 다른 사람의 기록을 깎아내리지는 말자.",
+    "의견이 다르면 그냥 다르다고 말해도 되잖아. 상대를 낮출 필요는 없지.",
+    "평범한 경험도 나눌 수 있는 곳이면 좋겠어. 조금만 부드럽게 이야기하자.",
+    "다르게 느껴져도 기록할 마음은 존중해줬으면 해.",
+    "내 기준과 다르다는 이유로 공유한 사람을 평가하지는 말자.",
+    "일상을 올리는 데 특별한 자격이 필요한 건 아니잖아. 서로 편하게 이야기하자."
+];
     function create({storage, now = Date.now, random = Math.random} = {}) {
         const read = (key, fallback) => { try { return JSON.parse(storage.getItem(key)) ?? fallback; } catch { return fallback; } };
         const write = (key, value) => { try { storage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
@@ -763,7 +964,8 @@
                 });
             }
             repairConversations(next);
-            if (original !== JSON.stringify(next)) write('fakebookPosts',next);
+            decoratePosts(next);
+            if (original !== JSON.stringify(next)) savePosts(next);
         }
         const normalizeContext = text => String(text || '').trim().replace(/\s+/g,' ');
         function conversationPair(post) {
@@ -775,7 +977,59 @@
             const matches = OWN_PAIRS.filter(pair=>pair.patterns.every(pattern=>pattern.test(text)));
             return matches.length === 1 ? matches[0] : null;
         }
-        function negativeCandidates(post) { const pair=conversationPair(post); return pair ? [pair.negative] : []; }
+        function conversationOptions(post, fallback=false) {
+            const pair=conversationPair(post);
+            if (!pair) return fallback ? OWN_GENERAL_PAIRS : [];
+            if (pair.id.startsWith('template:')) return [pair];
+            return OWN_COMMENT_PAIRS.filter(option=>option.id===pair.id || option.id.startsWith(pair.id+':'));
+        }
+        function resolveCommentPair(post, comment) {
+            return conversationOptions(post,true).find(pair=>pair.id===comment.negativePairId && pair.negative===comment.text) || null;
+        }
+        function positiveCandidates(post) {
+            const pair=conversationPair(post), topic=pair?.id.startsWith('topic:') ? pair.id.split(':')[1] : null;
+            return [...POSITIVE_COMMENTS.general,...(post.media?.length?POSITIVE_COMMENTS.media:[]),...(topic?POSITIVE_COMMENTS[topic]||[]:[])];
+        }
+        function stableHash(value) {
+            let hash=2166136261;
+            for (const char of String(value)) {hash^=char.codePointAt(0);hash=Math.imul(hash,16777619);}
+            hash^=hash>>>16; hash=Math.imul(hash,0x85ebca6b); hash^=hash>>>13; hash=Math.imul(hash,0xc2b2ae35); hash^=hash>>>16;
+            return hash>>>0;
+        }
+        function decorate(item, key, post, kind) {
+            if (item.emojiVersion===1) return;
+            item.emojiVersion=1; item.emoji='';
+            if (/\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(item.text || '')) return;
+            const hash=stableHash(key); if(hash%10>=3) return;
+            let choices;
+            if(item.negative) choices=['🤨','😒','🙄'];
+            else if(item.defense) choices=['🤝','🙂','💬'];
+            else {
+                const text=(item.text || '')+' '+(post.text || '');
+                if (/음식|요리|쿠키|빵|볶음밥|과일|메뉴|집밥/.test(text)) choices=['🍽️','😋','🙂'];
+                else if (/여행|바다|노을|일출/.test(text)) choices=['🌅','✨','🙂'];
+                else if (/운동|러닝|달리|자전거/.test(text)) choices=['💪','👏','🙂'];
+                else if (/코드|프로그램|버그/.test(text)) choices=['💻','🙌','🙂'];
+                else if (/책|공부|과제|도서관|문제/.test(text)) choices=['📚','📝','🙂'];
+                else if (/노래|음악|기타/.test(text)) choices=['🎧','🎵','🙂'];
+                else if (/꽃|화분|산책|하늘/.test(text)) choices=['🌿','✨','🙂'];
+                else choices=['🙂','✨','😊'];
+            }
+            item.emoji=choices[stableHash(key+':tone')%choices.length];
+        }
+        function decoratePosts(posts) {
+            const dummyIds=new Set(pool.map(person=>person.id));
+            for (const post of posts) {
+                if(post.demo && dummyIds.has(post.authorId)) decorate(post,`post:${post.id}`,post,'post');
+                const visit=comments=> {for(const comment of comments||[]) {
+                    if(comment.simulated && dummyIds.has(comment.authorId)) decorate(comment,`comment:${post.id}:${comment.id}`,post,'comment');
+                    visit(comment.replies);
+                }};
+                visit(post.comments);
+            }
+        }
+        function savePosts(posts) { decoratePosts(posts); return write('fakebookPosts',posts); }
+        function negativeCandidates(post) { return conversationOptions(post).map(pair=>pair.negative); }
         function repairConversations(posts) {
             for (const post of posts) post.comments = (post.comments || []).filter(comment=> {
                 if (!comment.negative || !comment.simulated || comment.negativeContextVersion === 2) return true;
@@ -797,9 +1051,10 @@
             const key = `fakebookConversation:${accountId}`, state = read(key,{}), time = now();
             let blunt = pool.filter(person=>person.temperament==='blunt' && person.id!==post.authorId && !(post.comments||[]).some(c=>c.authorId===person.id));
             if (force && !blunt.length) blunt=pool.filter(person=>person.temperament==='blunt' && person.id!==post.authorId);
-            const pair = conversationPair(post);
-            const allowed = pair && !post.negativeCommentUsed && !(post.comments||[]).some(c=>c.negative) && (force || (!state.lastWasNegative && time >= (state.nextNegativeAt || 0)));
+            const options = conversationOptions(post);
+            const allowed = options.length && !post.negativeCommentUsed && !(post.comments||[]).some(c=>c.negative) && (force || (!state.lastWasNegative && time >= (state.nextNegativeAt || 0)));
             if (allowed && blunt.length && (force || random() < rate)) {
+                const pair = pick(options);
                 const person = pick(blunt);
                 result.authorId = person.id; result.author = person.name; result.text = pair.negative;
                 result.negative = true; result.negativeAt = time; result.negativePairId = pair.id; result.negativeContextText = normalizeContext(post.text); result.negativeContextVersion = 2;
@@ -810,8 +1065,8 @@
             state.lastWasNegative = result.negative === true;
             write(key,state); return result;
         }
-        const ownFallback = {id:'own:general',negative:'굳이 이런 얘기까지 올릴 필요가 있나 싶네.',defense:'자기 일상을 기록할 수 있는 공간이잖아. 올릴 필요가 없다고 단정하진 말자.'};
-        const additionalDefense = '같은 경험도 사람마다 의미가 다를 수 있지. 다른 사람의 기록을 깎아내리지는 말자.';
+        const ownFallback = OWN_GENERAL_PAIRS[0];
+        const additionalDefense = SECONDARY_DEFENSES[0];
         function tickOwnConversations(id) {
             const posts=read('fakebookPosts',[]), members=read('fakebookUsers',[]), time=now();
             if (!Array.isArray(posts)) return false;
@@ -833,7 +1088,7 @@
                 }
                 if (!negative) {
                     if (job.dueAt>time || !budget) continue;
-                    const pair=conversationPair(post) || ownFallback;
+                    const pair=pick(conversationOptions(post,true));
                     const people=pool.filter(person=>person.id!==id);
                     const blunt=people.filter(person=>person.temperament==='blunt');
                     const person=pick(blunt.length?blunt:people); if (!person) continue;
@@ -841,12 +1096,12 @@
                     post.comments.push(negative); post.negativeCommentUsed=true; budget--;
                 }
                 const defenses=(negative.replies||[]).filter(reply=>reply.defense);
-                const pair=conversationPair(post);
-                const primary=pair && pair.negative===negative.text ? pair.defense : ownFallback.defense;
-                negative.defensePlan={accountId:id,guaranteed:true,dueAt:time+int(1,3)*MINUTE,target: defenses.length ? Math.min(2,defenses.length) : int(1,2),primaryDefense:primary,done:defenses.length>0};
+                const pair=resolveCommentPair(post,negative);
+                const primary=pair ? pair.defense : ownFallback.defense;
+                negative.defensePlan={accountId:id,guaranteed:true,dueAt:time+int(1,3)*MINUTE,target: defenses.length ? Math.min(2,defenses.length) : int(1,2),primaryDefense:primary,secondaryDefense:pick(SECONDARY_DEFENSES),done:defenses.length>0};
                 job.started=true; job.commentId=negative.id; job.completed=negative.defensePlan.done;
             }
-            return original!==JSON.stringify(posts) && write('fakebookPosts',posts);
+            return original!==JSON.stringify(posts) && savePosts(posts);
         }
         function tickDefenses(id) {
             const posts = read('fakebookPosts',[]); if (!Array.isArray(posts)) return false;
@@ -864,7 +1119,7 @@
                     for (let i=0;i<needed && budget && candidates.length;i++) {
                         const person=candidates.shift(), ordinal=existing.length+i;
                         const sameContext=normalizeContext(post.text)===comment.negativeContextText;
-                        const text=ordinal===0 ? (sameContext?plan.primaryDefense:ownFallback.defense) : additionalDefense;
+                        const text=ordinal===0 ? (sameContext?plan.primaryDefense:ownFallback.defense) : (plan.secondaryDefense || additionalDefense);
                         comment.replies.push({id:`own-defense:${comment.id}:${ordinal}`,authorId:person.id,author:person.name,text,likedBy:[],simulated:true,defense:true,createdAt:new Date(time).toISOString()}); budget--;
                     }
                     plan.done=(comment.replies||[]).filter(reply=>reply.defense).length>=Math.min(2,plan.target||1);
@@ -873,7 +1128,7 @@
                 }
 
                 if (time-(comment.negativeAt || time) > LIMITS.postAge) { plan.cancelled=true; continue; }
-                const pair = conversationPair(post);
+                const pair = resolveCommentPair(post,comment);
                 if (!pair || pair.id !== comment.negativePairId || pair.negative !== comment.text || normalizeContext(post.text) !== comment.negativeContextText) {plan.cancelled=true;continue;}
                 if (!budget || plan.dueAt > time) continue;
                 const replyId = `defense:${comment.id}`;
@@ -884,7 +1139,7 @@
                 comment.replies.push({id:replyId,authorId:person.id,author:person.name,text:pair.defense,likedBy:[],simulated:true,defense:true,createdAt:new Date(Math.min(time,plan.dueAt)).toISOString()});
                 plan.done=true; budget--;
             }
-            return original!==JSON.stringify(posts) && write('fakebookPosts',posts);
+            return original!==JSON.stringify(posts) && savePosts(posts);
         }
         function recommendations(candidates, limit = LIMITS.recommendations) {
             const seen = new Set(), selected = [];
@@ -915,7 +1170,7 @@
             const comment=autoComment(target,accountId,normal,1,true);
             if (!comment.negative) return false;
             target.comments ||= []; target.comments.push(comment);
-            if (!write('fakebookPosts',live)) return false;
+            if (!savePosts(live)) return false;
             Object.assign(chosen,target); return true;
         }
         function selectHomePosts(posts, limit = 10, preferredIds = null) {
@@ -982,7 +1237,7 @@
                     const close=available.filter(p=>related.includes(p.id)); const person=pick(close.length && random()<.75?close:available);
                     if (!person) continue;
                     if (wantComment) {
-                        const text=pick(['잘 읽었어.','공유해줘서 고마워!','소식 잘 보고 가요.',...(post.media?.length ? ['사진·영상 잘 봤어!','기록 남겨줘서 고마워.'] : ['이야기 남겨줘서 고마워.','다음 소식도 기다릴게.'])].filter(text=>!(post.comments||[]).some(c=>c.simulated&&c.text===text)));
+                        const text=pick(positiveCandidates(post).filter(text=>!(post.comments||[]).some(c=>c.simulated&&c.text===text)));
                         if (!text) continue;
                         post.comments ||= [];
                         post.comments.push(autoComment(post,id,{id:`ambient:${post.id}:${person.id}:${meta.comments}`,authorId:person.id,author:person.name,text,likedBy:[],simulated:true,createdAt:new Date(Math.min(time,due)).toISOString()},0)); meta.comments++;
@@ -991,15 +1246,16 @@
                 }
                 meta.nextAt=time+int(2,12)*MINUTE;
             }
-            return original!==JSON.stringify(posts) && write('fakebookPosts',posts);
+            return original!==JSON.stringify(posts) && savePosts(posts);
         }
         function tick(id) { if (!id) return false; const requests=tickRequests(id); const own=tickOwnConversations(id); const posts=tickPosts(id); const defenses=tickDefenses(id); return Boolean(requests||own||posts||defenses); }
-        return {boot,tick,tickRequests,tickPosts,tickOwnConversations,tickDefenses,autoComment,conversationPair,negativeCandidates,friends,shuffle,recommendations,ensureHomeNegative,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
+        return {boot,tick,tickRequests,tickPosts,tickOwnConversations,tickDefenses,autoComment,conversationPair,conversationOptions,resolveCommentPair,positiveCandidates,decoratePosts,negativeCandidates,friends,shuffle,recommendations,ensureHomeNegative,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
     }
-    const api={create,LIMITS,TEXTS,CONTENT,AVATARS,TEMPLATE_PAIRS,OWN_PAIRS,NEGATIVE_COMMENTS,DEFENSE_COMMENTS};
+    const api={create,LIMITS,TEXTS,CONTENT,AVATARS,TEMPLATE_PAIRS,OWN_PAIRS,OWN_COMMENT_PAIRS,POSITIVE_COMMENTS,SECONDARY_DEFENSES,NEGATIVE_COMMENTS,DEFENSE_COMMENTS};
     if (typeof module!=='undefined' && module.exports) module.exports=api;
     else scope.FakebookAmbient=api;
 })(typeof window!=='undefined'?window:globalThis);
+
 
 
 
