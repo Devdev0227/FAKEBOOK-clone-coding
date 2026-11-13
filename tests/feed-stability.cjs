@@ -6,10 +6,11 @@ class Element {
  remove(){if(this.parentNode){const list=this.parentNode.children;list.splice(list.indexOf(this),1);this.parentNode=null;}}
  append(...nodes){for(const n of nodes){n.remove();n.parentNode=this;this.children.push(n);}}
  insertBefore(n,before){n.remove();const i=before?this.children.indexOf(before):this.children.length;assert(i>=0);n.parentNode=this;this.children.splice(i,0,n);}
- replaceChildren(){this.resetCount++;for(const n of this.children)n.parentNode=null;this.children=[];}
+ replaceChildren(...nodes){this.resetCount++;for(const n of this.children)n.parentNode=null;this.children=[];this.append(...nodes);}
  setAttribute(k,v){this.attrs[k]=v;} removeAttribute(k){delete this.attrs[k];}
  addEventListener(k,f){this.events[k]=f;}
  querySelector(tag){return walk(this).find(n=>n!==this&&n.tagName===tag.toUpperCase());}
+ pause(){this.paused=true;}
  focus(){active=this;} click(){active=this;return this.events.click?.({currentTarget:this});}
 }
 const walk=n=>[n,...n.children.flatMap(walk)],store=new Map(),handlers={},composer=new Element();let fail=false,reads=0,created=0,revoked=[];
@@ -26,9 +27,15 @@ const click=(text,scope=root)=>{const b=walk(scope).find(n=>n.tagName==='BUTTON'
 const icons=(kind,scope=root)=>walk(scope).filter(n=>n.className===`icon-button ${kind}-button`);
 const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
 (async()=>{
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../js/media-carousel.js'),'utf8'),context);
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../js/feed.js'),'utf8'),context);await flush();
- const a=root.children[0],b=root.children[1],gallery=walk(a).find(n=>n.className==='media-grid'),video=walk(gallery).find(n=>n.tagName==='VIDEO'),image=walk(gallery).find(n=>n.tagName==='IMG');
- assert(video&&image);video.currentTime=27;video.paused=false;
+ const a=root.children[0],b=root.children[1],gallery=walk(a).find(n=>n.className==='media-grid');
+ assert.equal(reads,1); // 보이지 않는 큰 첨부는 미리 읽지 않습니다.
+ walk(gallery).find(n=>n.attrs['aria-label']==='다음 첨부 파일').click();
+ await flush();
+ const video=walk(gallery).find(n=>n.tagName==='VIDEO'),image=walk(gallery).find(n=>n.tagName==='IMG'); assert(video&&image);
+ walk(gallery).find(n=>n.attrs['aria-label']==='이전 첨부 파일').click();
+ video.currentTime=27;video.paused=false;
  const resets=root.resetCount,heart=icons('heart',a)[0];heart.click();
  assert.equal(root.children[0],a);assert.equal(root.children[1],b);assert.equal(active,heart);assert.equal(heart.attrs['aria-pressed'],'true');assert.equal(heart.children[1].textContent,'1');assert.equal(root.resetCount,resets);
  icons('heart',a)[1].click();icons('heart',a)[2].click();icons('bookmark',a)[0].click();
@@ -50,5 +57,6 @@ const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
  assert(walk(root).some(n=>n.textContent===legacy.text));assert(!walk(root).some(n=>['댓글 숨기기','다시 표시','숨긴 댓글입니다.'].includes(n.textContent)));
  console.log('PASS: post/comment/reply likes and bookmarks reuse DOM/focus; editor drafts survive; failed saves preserve state; comment update retains other cards and image/video playback/URLs; saved removal releases URLs and preserves empty state');
 })().catch(e=>{console.error(e);process.exitCode=1});
+
 
 

@@ -58,11 +58,12 @@
         });
     }
     const allowed = new Set(['image/jpeg','image/png','image/gif','image/webp','video/mp4','video/webm','video/ogg']);
-    let selected = [], previewUrls = [];
+    const MAX_MEDIA_COUNT = 10, MAX_MEDIA_BYTES = 100 * 1024 * 1024;
+    let selected = [], previewUrls = [], previewCarousel = null;
     const renderedPosts = new Map();
     let renderedRoot = null, renderedActor = null;
     function releaseViews() {
-        for (const view of renderedPosts.values()) view.urls.forEach(URL.revokeObjectURL);
+        for (const view of renderedPosts.values()) { view.carousel?.dispose(); view.urls.forEach(URL.revokeObjectURL); }
         renderedPosts.clear();
     }
     function syncIcons(view, post, user) {
@@ -77,31 +78,30 @@
         ['likedBy', 'savedBy', 'legacyLikes', 'likes', 'ambient', 'ownConversation', 'defensePlan'].includes(key) ? undefined : value);
     const input = document.querySelector('#postMedia');
     function clearPreview() {
+        previewCarousel?.dispose(); previewCarousel = null;
         previewUrls.forEach(URL.revokeObjectURL); previewUrls = [];
         document.querySelector('#mediaPreview').replaceChildren();
     }
     function mediaElement(file, url) {
         const element = document.createElement(file.type.startsWith('video/') ? 'video' : 'img');
         element.src = url;
-        if (element.tagName === 'VIDEO') { element.controls = true; element.preload = 'metadata'; }
+        if (element.tagName === 'VIDEO') { element.controls = true; element.preload = 'metadata'; element.setAttribute('aria-label', file.name || '첨부 동영상'); }
         else { element.alt = file.name || '첨부 사진'; element.loading = 'lazy'; }
         return element;
     }
     function preview() {
-        clearPreview();
-        selected.forEach((file, index) => {
-            const box = document.createElement('div');
-            const url = URL.createObjectURL(file); previewUrls.push(url);
-            box.append(mediaElement(file, url), button(`${file.name} 첨부 취소`, () => {
-                selected.splice(index, 1); input.value = ''; preview();
-            }));
-            document.querySelector('#mediaPreview').append(box);
-        });
+        clearPreview(); if (!selected.length) return;
+        const files=[...selected], name=textElement('p', files[0].name); name.className='attachment-hint';
+        previewCarousel=window.FakebookCarousel.create({count:files.length,label:'첨부 미리보기',onChange:index=>{name.textContent=files[index].name;},load:index=> {
+            const file=files[index], url=URL.createObjectURL(file); previewUrls.push(url); return mediaElement(file,url);
+        }});
+        const remove=button('현재 첨부 취소',()=> { selected.splice(previewCarousel.currentIndex,1); input.value=''; preview(); });
+        document.querySelector('#mediaPreview').append(previewCarousel.element,name,remove);
     }
     input.addEventListener('change', () => {
         const files = [...input.files];
-        if (files.length > 4 || files.some(file => !allowed.has(file.type) || file.size > 20 * 1024 * 1024)) {
-            message('지원하는 사진·영상 파일을 최대 4개, 각 20MB 이하로 선택해주세요.'); input.value = ''; return;
+        if (files.length > MAX_MEDIA_COUNT || files.some(file => !allowed.has(file.type) || file.size > MAX_MEDIA_BYTES)) {
+            message('지원하는 사진·영상 파일을 최대 10개, 각 100MB 이하로 선택해주세요.'); input.value = ''; return;
         }
         selected = files; message(''); preview();
     });
@@ -326,7 +326,7 @@
             }
             const mediaKey = JSON.stringify(post.media);
             const keepMedia = previous?.mediaKey === mediaKey;
-            if (previous && !keepMedia) previous.urls.forEach(URL.revokeObjectURL);
+            if (previous && !keepMedia) { previous.carousel?.dispose(); previous.urls.forEach(URL.revokeObjectURL); }
             const gallery = keepMedia ? previous.gallery : document.createElement('div');
             gallery.className = 'media-grid'; article.append(gallery);
             const actions = document.createElement('div'); actions.className = 'post-actions';
@@ -339,24 +339,21 @@
             for (const comment of post.comments) article.append(commentRow(post.id, comment, user, null, bindings));
             const form = commentForm('댓글', text => change(post.id, (target, actor) => target.comments.push(newComment(actor, text))));
             article.append(form);
-            const view = {article, gallery, mediaKey, signature, bindings, urls: keepMedia ? previous.urls : []};
+            const view = {article, gallery, mediaKey, signature, bindings, urls: keepMedia ? previous.urls : [], carousel: keepMedia ? previous.carousel : null};
             renderedPosts.set(post.id, view); ordered.push(article);
-            if (!keepMedia) void (async () => {
-                for (const media of post.media) {
-                    try {
-                        const file = await getFile(media.id);
-                        if (renderedPosts.get(post.id)?.gallery !== gallery) return;
-                        if (!file || !allowed.has(file.type)) { gallery.append(textElement('p', '첨부 파일을 찾을 수 없습니다.')); continue; }
-                        const url = URL.createObjectURL(file); view.urls.push(url); gallery.append(mediaElement(file, url));
-                    } catch {
-                        if (renderedPosts.get(post.id)?.gallery === gallery) gallery.append(textElement('p', '첨부 파일을 불러오지 못했습니다.'));
-                    }
-                }
-            })();
+            if (!keepMedia && post.media.length) {
+                view.carousel=window.FakebookCarousel.create({count:post.media.length,load:async index=> {
+                    const file=await getFile(post.media[index].id);
+                    if (renderedPosts.get(post.id)?.gallery !== gallery) return null;
+                    if (!file || !allowed.has(file.type)) throw new Error('첨부 파일을 찾을 수 없습니다.');
+                    const url=URL.createObjectURL(file); view.urls.push(url); return mediaElement(file,url);
+                }});
+                gallery.append(view.carousel.element);
+            }
         }
         const visibleIds = new Set(posts.map(post => post.id));
         for (const [id, view] of renderedPosts) {
-            if (!visibleIds.has(id)) { view.urls.forEach(URL.revokeObjectURL); renderedPosts.delete(id); }
+            if (!visibleIds.has(id)) { view.carousel?.dispose(); view.urls.forEach(URL.revokeObjectURL); renderedPosts.delete(id); }
         }
         // 순서가 같은 카드는 이동하지 않고, 변경된 카드만 교체합니다.
         ordered.forEach((article, index) => {
@@ -388,9 +385,10 @@
     window.addEventListener('fakebook:activity', render);
     window.addEventListener('fakebook:social-render', render);
     window.addEventListener('storage', event => { if (['fakebookPosts', 'fakebookCurrentUser', 'fakebookProfiles'].includes(event.key) || event.key === null) render(); });
-    window.addEventListener('pagehide', event => { if (!event.persisted) { previewUrls.forEach(URL.revokeObjectURL); releaseViews(); } });
+    window.addEventListener('pagehide', event => { if (!event.persisted) { previewCarousel?.dispose(); previewUrls.forEach(URL.revokeObjectURL); releaseViews(); } });
     render();
 })();
+
 
 
 
