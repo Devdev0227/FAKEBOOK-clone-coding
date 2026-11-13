@@ -417,6 +417,38 @@
         animal: ['cat','dog','extra-11','extra-12','extra-13'].map(name=>`img/profiles/${name}.webp`),
         object: ['coffee','books','gardening','extra-01','extra-08','extra-14'].map(name=>`img/profiles/${name}.webp`)
     });
+    const NEGATIVE_RULES = [
+        {topic:'general', words:[], texts:['굳이 올릴 얘기인지는 모르겠네.','생각보다 별 내용은 없네.','나는 별로 공감이 안 된다.','조금 과장해서 말하는 느낌인데.','이 정도는 꽤 흔한 얘기 아닌가.','취향이 나랑은 많이 다르네.']},
+        {topic:'food', words:['음식','쿠키','빵','카페','메뉴','집밥','볶음밥','식빵','과일','간식','점심','저녁'], texts:['맛은 생각보다 평범할 것 같은데.','보기만큼 맛있을지는 모르겠네.','그 메뉴가 그렇게 특별한가 싶다.','나는 다른 메뉴가 더 나아 보이네.']},
+        {topic:'fitness', words:['운동','러닝','달리','운동화','자전거'], texts:['이 정도로 벌써 뿌듯해?','꾸준히 할 수 있을지는 봐야겠네.','기록은 아직 평범해 보이는데.','운동 얘기는 다 비슷하게 느껴진다.']},
+        {topic:'travel', words:['여행','바다','노을','일출','산책','가방'], texts:['실제로는 사진만큼 좋을지 모르겠네.','너무 흔한 코스인 것 같은데.','나는 그쪽은 별로 끌리지 않더라.','기대한 것보다는 평범한 풍경이네.']},
+        {topic:'study', words:['과제','공부','도서관','문제','코드','제출','마감'], texts:['그 정도는 기본 아닌가 싶네.','생각보다 오래 걸렸나 보네.','그게 그렇게 어려운 일이었나?','조금 더 일찍 끝낼 수도 있었겠는데.']},
+        {topic:'hobby', words:['책','노래','음악','영화','기타','전시','그림','취미','보드게임'], texts:['나는 그 취향은 잘 모르겠다.','그렇게까지 추천할 정도인지는 모르겠네.','비슷한 게 너무 많은 것 같은데.','생각했던 것만큼 특별하지는 않네.']},
+        {topic:'photo', words:['사진','앨범','꽃','하늘','화분','조명'], texts:['구도가 조금 아쉬워 보이네.','보정이 실제 분위기보다 강한 느낌인데.','비슷한 사진을 자주 본 것 같아.','이 사진이 특별한 이유는 잘 모르겠다.']}
+    ];
+    const NEGATIVE_COMMENTS = NEGATIVE_RULES.flatMap(rule=>rule.texts);
+    const DEFENSE_COMMENTS = [
+        '취향이 다를 수는 있는데 말은 조금 부드럽게 하자.',
+        '그냥 일상 공유한 건데 그렇게 말할 필요는 없지.',
+        '의견은 말할 수 있어도 상대를 깎아내리지는 말자.',
+        '조금 더 배려해서 이야기하면 좋겠어.',
+        '다르게 느꼈다면 그렇게만 말해도 충분하지 않을까?',
+        '작은 성취라도 본인에게는 의미가 있을 수 있어.',
+        '가볍게 나눈 이야기니까 너무 날카롭게 보지 말자.',
+        '취향이 안 맞으면 그냥 지나가도 괜찮아.',
+        '표현을 조금만 바꾸면 더 좋은 대화가 될 것 같아.',
+        '여기서는 서로 기분 상하지 않게 이야기하자.',
+        '비교보다는 각자의 경험을 존중해주면 좋겠다.',
+        '상대가 즐거워하는 마음까지 평가할 필요는 없지.',
+        '피드백도 조금 따뜻하게 전할 수 있잖아.',
+        '누구에게나 자기 일상을 남길 공간은 필요하지.',
+        '그렇게 단정하기보다는 한 번 더 생각해보자.',
+        '다른 의견도 괜찮지만 말투는 배려해줬으면 해.',
+        '굳이 기분 상할 표현까지 쓸 필요는 없을 것 같아.',
+        '잘 모르겠다면 먼저 물어보는 건 어떨까?',
+        '사소해 보여도 당사자에게는 소중한 기록일 수 있어.',
+        '서로 존중하면서 편하게 이야기했으면 좋겠어.'
+    ];
     function create({storage, now = Date.now, random = Math.random} = {}) {
         const read = (key, fallback) => { try { return JSON.parse(storage.getItem(key)) ?? fallback; } catch { return fallback; } };
         const write = (key, value) => { try { storage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
@@ -454,6 +486,10 @@
                     person.avatarAssetVersion = 2;
                 }
             });
+            if (!pool.some(person=>person.temperament === 'blunt')) {
+                const selected = new Set(shuffle(pool.map(person=>person.id)).slice(0,3));
+                pool.forEach(person=>{person.temperament = selected.has(person.id) ? 'blunt' : 'friendly';});
+            }
             if (JSON.stringify(old) !== JSON.stringify(pool)) write('fakebookDummyProfiles',pool);
             seedPosts(); return pool;
         }
@@ -482,10 +518,63 @@
                 const choices = shuffle(CONTENT[index].comments).slice(0,int(2,CONTENT[index].comments.length));
                 const authors = shuffle(pool.filter(p=>p.id!==post.authorId));
                 const created = Date.parse(post.createdAt);
-                choices.forEach((text,i)=>post.comments.push({id:`sample-comment:${post.id}:${i}`,authorId:authors[i].id,author:authors[i].name,text,likedBy:[],simulated:true,seeded:true,createdAt:new Date(Math.min(now(),(Number.isFinite(created)?created:now())+(i+1)*5*MINUTE)).toISOString()}));
+                choices.forEach((text,i)=>post.comments.push(autoComment(post, read('fakebookCurrentUser',null)?.id, {id:`sample-comment:${post.id}:${i}`,authorId:authors[i].id,author:authors[i].name,text,likedBy:[],simulated:true,seeded:true,createdAt:new Date(Math.min(now(),(Number.isFinite(created)?created:now())+(i+1)*5*MINUTE)).toISOString()}, .05)));
                 post.ambientEngagementVersion = 1;
             }
+            const accountId = read('fakebookCurrentUser',null)?.id;
+            if (accountId) for (const post of next) {
+                if (!post.demo) continue;
+                post.comments = (post.comments || []).map(comment=> {
+                    if (!comment.seeded || comment.civilityReviewed || comment.negative) return comment;
+                    if (comment.likedBy?.length || comment.replies?.length || comment.updatedAt) return {...comment,civilityReviewed:true};
+                    return autoComment(post, accountId, comment, .05);
+                });
+            }
             if (original !== JSON.stringify(next)) write('fakebookPosts',next);
+        }
+        function conversationSettings(id) {
+            return {negativeComments: read(`fakebookSimulation:${id}`,{}).negativeComments !== false};
+        }
+        function negativeCandidates(post) {
+            const text = String(post.text || '');
+            const matches = NEGATIVE_RULES.filter(rule=>rule.words.some(word=>text.includes(word)));
+            // 일반 글에서 사진 구도/맛/운동 기록을 임의로 추정하지 않습니다.
+            return matches.length ? matches.flatMap(rule=>rule.texts) : NEGATIVE_RULES[0].texts;
+        }
+        function autoComment(post, accountId, normal, rate) {
+            const result = {...normal,civilityReviewed:true};
+            if (!accountId) return result;
+            const key = `fakebookConversation:${accountId}`, state = read(key,{}), time = now();
+            const blunt = pool.filter(person=>person.temperament==='blunt' && person.id!==post.authorId && !(post.comments||[]).some(c=>c.authorId===person.id));
+            const allowed = conversationSettings(accountId).negativeComments && !post.negativeCommentUsed && !(post.comments||[]).some(c=>c.negative) && !state.lastWasNegative && time >= (state.nextNegativeAt || 0);
+            if (allowed && blunt.length && random() < rate) {
+                const person = pick(blunt);
+                result.authorId = person.id; result.author = person.name; result.text = pick(negativeCandidates(post));
+                result.negative = true; result.negativeAt = time;
+                if (random() < .65) result.defensePlan = {accountId,dueAt:time+int(2,10)*MINUTE,done:false};
+                post.negativeCommentUsed = true;
+                state.nextNegativeAt = time + 5*MINUTE;
+            }
+            state.lastWasNegative = result.negative === true;
+            write(key,state); return result;
+        }
+        function tickDefenses(id) {
+            const posts = read('fakebookPosts',[]); if (!Array.isArray(posts)) return false;
+            const original = JSON.stringify(posts), time = now(); let budget = 2;
+            for (const post of posts) for (const comment of post.comments || []) {
+                const plan = comment.defensePlan;
+                if (!comment.negative || !plan || plan.done || plan.cancelled || (plan.accountId && plan.accountId !== id)) continue;
+                if (!conversationSettings(id).negativeComments || comment.hiddenBy?.includes(id) || time-(comment.negativeAt || time) > LIMITS.postAge) { plan.cancelled=true; continue; }
+                if (!budget || plan.dueAt > time) continue;
+                const replyId = `defense:${comment.id}`;
+                if ((comment.replies||[]).some(reply=>reply.id===replyId || reply.defense)) {plan.done=true;continue;}
+                const candidates = pool.filter(person=>person.id!==comment.authorId && person.id!==post.authorId && person.temperament!=='blunt');
+                const person = pick(candidates); if (!person) {plan.cancelled=true;continue;}
+                comment.replies ||= [];
+                comment.replies.push({id:replyId,authorId:person.id,author:person.name,text:pick(DEFENSE_COMMENTS),likedBy:[],simulated:true,defense:true,createdAt:new Date(Math.min(time,plan.dueAt)).toISOString()});
+                plan.done=true; budget--;
+            }
+            return original!==JSON.stringify(posts) && write('fakebookPosts',posts);
         }
         function recommendations(candidates, limit = LIMITS.recommendations) {
             const seen = new Set(), selected = [];
@@ -559,7 +648,7 @@
                         const text=pick(['잘 읽었어.','공유해줘서 고마워!','소식 잘 보고 가요.',...(post.media?.length ? ['사진·영상 잘 봤어!','기록 남겨줘서 고마워.'] : ['이야기 남겨줘서 고마워.','다음 소식도 기다릴게.'])].filter(text=>!(post.comments||[]).some(c=>c.simulated&&c.text===text)));
                         if (!text) continue;
                         post.comments ||= [];
-                        post.comments.push({id:`ambient:${post.id}:${person.id}:${meta.comments}`,authorId:person.id,author:person.name,text,likedBy:[],simulated:true,createdAt:new Date(Math.min(time,due)).toISOString()}); meta.comments++;
+                        post.comments.push(autoComment(post,id,{id:`ambient:${post.id}:${person.id}:${meta.comments}`,authorId:person.id,author:person.name,text,likedBy:[],simulated:true,createdAt:new Date(Math.min(time,due)).toISOString()},.03)); meta.comments++;
                     } else {post.likedBy ||= []; post.likedBy.push(person.id);meta.likes++;}
                     budget--; due+=MINUTE;
                 }
@@ -567,12 +656,13 @@
             }
             return original!==JSON.stringify(posts) && write('fakebookPosts',posts);
         }
-        function tick(id) { if (!id) return false; const requests=tickRequests(id); const posts=tickPosts(id); return Boolean(requests||posts); }
-        return {boot,tick,tickRequests,tickPosts,friends,shuffle,recommendations,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
+        function tick(id) { if (!id) return false; const requests=tickRequests(id); const posts=tickPosts(id); const defenses=tickDefenses(id); return Boolean(requests||posts||defenses); }
+        return {boot,tick,tickRequests,tickPosts,tickDefenses,autoComment,conversationSettings,negativeCandidates,friends,shuffle,recommendations,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
     }
-    const api={create,LIMITS,TEXTS,CONTENT,AVATARS};
+    const api={create,LIMITS,TEXTS,CONTENT,AVATARS,NEGATIVE_COMMENTS,DEFENSE_COMMENTS};
     if (typeof module!=='undefined' && module.exports) module.exports=api;
     else scope.FakebookAmbient=api;
 })(typeof window!=='undefined'?window:globalThis);
+
 
 

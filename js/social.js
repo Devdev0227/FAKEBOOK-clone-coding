@@ -139,6 +139,10 @@
         const visibility = el('input'); visibility.type = 'checkbox'; visibility.id = 'birthdayPublic'; visibility.checked = person.birthdayPublic;
         const visibilityLabel = el('label', undefined, 'birthday-visibility'); visibilityLabel.htmlFor = visibility.id; visibilityLabel.append(visibility, el('span', '생년월일 공개')); form.append(visibilityLabel);
         form.append(el('p', '공개를 끄면 내 프로필에서만 생년월일을 볼 수 있습니다.', 'social-hint'));
+        const negativeToggle = el('input'); negativeToggle.type = 'checkbox'; negativeToggle.id = 'negativeComments'; negativeToggle.checked = activity.conversationSettings(accountId).negativeComments;
+        const negativeLabel = el('label', undefined, 'birthday-visibility'); negativeLabel.htmlFor = negativeToggle.id;
+        negativeLabel.append(negativeToggle, el('span', '가벼운 부정적 댓글 시뮬레이션')); form.append(negativeLabel);
+        form.append(el('p', '끄면 새로운 부정적 댓글과 예정된 제지 답글을 만들지 않습니다. 기존 댓글은 개별적으로 숨길 수 있어요.', 'social-hint'));
         form.append(el('p', '표시 이름은 게시물·댓글에 반영됩니다. 로그인 및 비밀번호 찾기용 가입 이름은 유지됩니다.', 'social-hint'));
         const controls = el('div', undefined, 'profile-form-actions'); const submit = el('button', '저장', 'social-button primary'); submit.type = 'submit'; const cancel = el('a', '취소', 'social-button'); cancel.href = '#profile'; controls.append(submit, cancel); form.append(controls);
         file.addEventListener('change', async () => {
@@ -160,7 +164,14 @@
             const displayName = name.value.trim(), intro = bio.value.trim(), birth = birthday.value;
             if (displayName.length < 2 || displayName.length > 30 || intro.length > 200 || (birth && !validBirthday(birth, maxDate))) { notice.textContent = '이름·소개 길이와 생년월일을 확인해주세요.'; return; }
             const profiles = read('fakebookProfiles', {}); profiles[accountId] = {name: displayName, bio: intro, birthday: birth, birthdayPublic: visibility.checked, avatar: safeImage(photo)};
-            if (write('fakebookProfiles', profiles)) { notice.textContent = '프로필이 저장되었습니다.'; window.dispatchEvent(new Event('fakebook:profile')); location.hash = '#profile'; }
+            const preferenceKey = `fakebookSimulation:${accountId}`, previousPreference = localStorage.getItem(preferenceKey);
+            if (!write(preferenceKey, {negativeComments: negativeToggle.checked})) return;
+            if (!write('fakebookProfiles', profiles)) {
+                try { if (previousPreference === null) localStorage.removeItem(preferenceKey); else localStorage.setItem(preferenceKey,previousPreference); } catch {}
+                return;
+            }
+            if (!negativeToggle.checked) activity.tickDefenses(accountId);
+            notice.textContent = '프로필이 저장되었습니다.'; window.dispatchEvent(new Event('fakebook:profile')); location.hash = '#profile';
         });
         panel.append(form);
     }
@@ -236,6 +247,7 @@
     window.addEventListener('pagehide', () => { if (timer !== undefined) window.clearInterval(timer); });
     render();
 })();
+
 
 
 
