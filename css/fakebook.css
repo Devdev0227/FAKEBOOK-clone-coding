@@ -649,3 +649,30 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
 @media (max-width: 760px) {
     .login-page .login-recovery-links { margin: 24px 0 36px; }
 }
+
+
+/* 첨부 미디어: 한 항목씩 표시하는 캐러셀 */
+.media-grid > .media-carousel { grid-column: 1 / -1; min-width: 0; }
+.media-carousel { width: 100%; min-width: 0; position: relative; }
+.media-carousel:focus-visible { outline: 3px solid #166fe5; outline-offset: 3px; border-radius: 8px; }
+.media-carousel-stage { width: 100%; aspect-ratio: 1 / 1; max-height: 640px; position: relative; overflow: hidden; border-radius: 8px; background: #0d1014; }
+.media-carousel-slide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.media-grid .media-carousel-slide > img, .media-grid .media-carousel-slide > video { display: block; width: 100%; height: 100%; max-height: none; object-fit: contain; border-radius: 0; background: transparent; }
+.media-carousel-placeholder { color: #e4e6eb; padding: 24px; text-align: center; line-height: 1.5; }
+.feed-post .media-carousel-arrow, #mediaPreview .media-carousel-arrow { display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 10px; border: 0; border-radius: 50%; background: rgba(30,33,38,.72); color: #fff; cursor: pointer; }
+.media-carousel-previous { left: 10px; }
+.media-carousel-next { right: 10px; }
+.media-carousel-arrow svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.media-carousel-arrow:disabled { visibility: hidden; }
+.media-carousel-dots { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; padding: 4px 0; gap: 0; }
+.feed-post .media-carousel-dot, #mediaPreview .media-carousel-dot { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 32px; min-height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; }
+.feed-post .media-carousel-dot[aria-pressed="true"], #mediaPreview .media-carousel-dot[aria-pressed="true"] { background: transparent; }
+.media-carousel-dot > span { width: 8px; height: 8px; border-radius: 50%; background: #a8adb7; }
+.media-carousel-dot[aria-pressed="true"] > span { background: #1877f2; }
+.media-carousel-status { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#mediaPreview { display: block; }
+#mediaPreview > .attachment-hint { overflow-wrap: anywhere; }
+@media (max-width: 480px) {
+    .media-carousel-previous { left: 6px; }
+    .media-carousel-next { right: 6px; }
+}
