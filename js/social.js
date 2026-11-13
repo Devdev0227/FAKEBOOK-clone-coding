@@ -45,7 +45,15 @@
         return {id, name: saved.name || member?.name || (actor()?.id === id ? actor().name : fallback), bio: saved.bio || '', birthday, birthdayPublic, friendCount: friendCount(id), avatar: safeImage(saved.avatar) || DEFAULT_AVATAR};
     }
     function safeImage(src) { return typeof src === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(src) ? src : ''; }
-    function image(person, className = 'social-avatar') { const node = el('img', undefined, className); node.src = person.avatar; node.alt = `${person.name} 프로필 사진`; return node; }
+    function setAvatar(node, src) {
+        node.onerror = () => { node.onerror = null; node.src = DEFAULT_AVATAR; };
+        node.src = src || DEFAULT_AVATAR;
+    }
+    function image(person, className = 'social-avatar') {
+        const node = el('img', undefined, className);
+        node.loading = 'lazy'; node.decoding = 'async';
+        setAvatar(node, person.avatar); node.alt = `${person.name} 프로필 사진`; return node;
+    }
     function author(id, fallback) {
         const person = profile(id, fallback);
         const link = el('a', undefined, 'author-profile'); link.href = id ? `#profile/${encodeURIComponent(id)}` : '#home';
@@ -173,7 +181,7 @@
     const isFeed = () => !/^#(friends|profile(?:\/|$)|settings$)/.test(location.hash);
     function render() {
         if (!actor()?.id) { location.href = 'index.html'; return; }
-        const mine = profile(actor().id); const avatarNode = document.getElementById('sidebarAvatar'); avatarNode.src = mine.avatar;
+        const mine = profile(actor().id); const avatarNode = document.getElementById('sidebarAvatar'); setAvatar(avatarNode, mine.avatar);
         document.getElementById('welcomeName').textContent = `${mine.name}님`;
         const count = document.getElementById('sidebarFriends'); if (count) count.textContent = `친구 ${mine.friendCount}명`;
         document.getElementById('sidebarBio').textContent = mine.bio || 'FAKEBOOK에 오신 것을 환영합니다.';
@@ -217,5 +225,6 @@
     window.addEventListener('pagehide', () => { if (timer !== undefined) window.clearInterval(timer); });
     render();
 })();
+
 
 
