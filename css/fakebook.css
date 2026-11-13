@@ -635,3 +635,17 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
 
 /* 좋아요 숫자/선택 상태가 바뀔 때 버튼 너비가 흔들리지 않도록 유지 */
 .icon-button span { display: inline-block; font-weight: 600; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }
+
+
+/* 기존 로그인 간격 안에서 아이디/비밀번호 찾기를 나란히 표시 */
+.login-page .login-recovery-links { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 36px 0 54px; }
+.login-page .login-recovery-links .login-find-button { display: inline-flex; align-items: center; justify-content: center; margin: 0; padding: 4px; text-decoration: none; }
+.login-page .login-recovery-links .login-find-button:hover { text-decoration: underline; }
+.login-recovery-links > span { color: #8a8d91; }
+.auth-success { color: #166fe5; margin-top: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+.auth-recovery-result { margin: 16px 0; padding: 20px; border: 1px solid #c8ddf6; border-radius: 8px; background: #f2f7ff; text-align: center; }
+.auth-recovery-result p { margin: 0 0 8px; color: #65676b; }
+.auth-recovery-result strong { display: block; font-size: 22px; color: #166fe5; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+    .login-page .login-recovery-links { margin: 24px 0 36px; }
+}
