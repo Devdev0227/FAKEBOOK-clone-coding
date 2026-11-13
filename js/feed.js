@@ -148,7 +148,7 @@
     function commentRow(postId, comment, user, parentId = null, bindings = []) {
         const row = document.createElement('div'); row.className = parentId === null ? 'comment-item' : 'comment-item reply-item';
         const find = post => parentId === null ? post.comments : (post.comments.find(item => item.id === parentId)?.replies || []);
-        const body = textElement('p', comment.text);
+        const body = textElement('p', displayText(comment));
         const header = document.createElement('div'); header.className = 'comment-header';
         const author = document.createElement('div'); author.className = 'comment-author';
         const actions = document.createElement('div'); actions.className = 'comment-actions';
@@ -246,6 +246,7 @@
         if (!post || action(post, user, posts) === false) return;
         if (save(posts)) render();
     }
+    function displayText(item) { return (item.text || '') + (item.emojiVersion === 1 && item.emoji ? ` ${item.emoji}` : ''); }
     function textElement(tag, text) { const element = document.createElement(tag); element.textContent = text; return element; }
     async function render() {
         const user = current(); if (!user?.id) { location.href = 'index.html'; return; }
@@ -294,7 +295,7 @@
                 filesTransaction('readwrite', store => target.media.forEach(media => store.delete(media.id))).catch(() => message('게시물은 삭제되었지만 첨부 파일 정리에 실패했습니다.'));
                 render(); return false;
             })));
-            const body = textElement('p', post.text || '');
+            const body = textElement('p', displayText(post));
             article.append(header, body);
             if (post.authorId === user.id) {
                 const editForm = document.createElement('form'); editForm.className = 'post-edit-form'; editForm.hidden = true;
@@ -388,6 +389,7 @@
     window.addEventListener('pagehide', event => { if (!event.persisted) { previewCarousel?.dispose(); previewUrls.forEach(URL.revokeObjectURL); releaseViews(); } });
     render();
 })();
+
 
 
 
