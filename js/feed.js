@@ -4,7 +4,7 @@
     const root = document.querySelector('#localPosts');
     if (!root) return;
     const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
-    const current = () => read('fakebookCurrentUser', null);
+    const current = () => { const actor = read('fakebookCurrentUser', null); return actor && window.FakebookSocial ? {...actor, name: window.FakebookSocial.profile(actor.id, actor.name).name} : actor; };
     if (!current()?.id) { location.href = 'index.html'; return; }
     const message = text => { document.querySelector('#feedMessage').textContent = text; };
     const uid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -129,7 +129,7 @@
         const header = document.createElement('div'); header.className = 'comment-header';
         const author = document.createElement('div'); author.className = 'comment-author';
         const actions = document.createElement('div'); actions.className = 'comment-actions';
-        author.append(textElement('strong', comment.author));
+        author.append(window.FakebookSocial ? window.FakebookSocial.author(comment.authorId, comment.author) : textElement('strong', comment.author));
         if (comment.updatedAt) author.append(textElement('small', '수정됨'));
         header.append(author, actions);
         row.append(header, body);
@@ -227,6 +227,7 @@
         const version = ++renderVersion;
         feedUrls.forEach(URL.revokeObjectURL); feedUrls = []; root.replaceChildren();
         const user = current(); if (!user?.id) { location.href = 'index.html'; return; }
+        if (window.FakebookSocial && !window.FakebookSocial.isFeed()) return;
         const saved = location.hash === '#saved';
         document.querySelector('#feedTitle').textContent = saved ? '저장한 게시물' : '홈';
         for (const [id, active] of [['homeLink', !saved], ['savedLink', saved]]) {
@@ -238,7 +239,7 @@
         for (const post of posts) {
             const article = document.createElement('article'); article.className = 'feed-post';
             const header = document.createElement('div'); header.className = 'feed-post-header';
-            header.append(textElement('strong', post.author), textElement('span', new Date(post.createdAt).toLocaleString('ko-KR') + (post.updatedAt ? ' · 수정됨' : '')));
+            header.append(window.FakebookSocial ? window.FakebookSocial.author(post.authorId, post.author) : textElement('strong', post.author), textElement('span', new Date(post.createdAt).toLocaleString('ko-KR') + (post.updatedAt ? ' · 수정됨' : '')));
             const manageButtons = document.createElement('div'); manageButtons.className = 'post-manage-buttons';
             if (post.authorId === user.id) header.append(manageButtons);
             if (post.authorId === user.id) manageButtons.append(button('게시물 삭제', () => change(post.id, (target, actor, all) => {
@@ -317,7 +318,9 @@
         } finally { submit.disabled = false; input.disabled = false; }
     });
     window.addEventListener('hashchange', render);
-    window.addEventListener('storage', event => { if (['fakebookPosts', 'fakebookCurrentUser'].includes(event.key) || event.key === null) render(); });
+    window.addEventListener('fakebook:profile', render);
+    window.addEventListener('storage', event => { if (['fakebookPosts', 'fakebookCurrentUser', 'fakebookProfiles'].includes(event.key) || event.key === null) render(); });
     window.addEventListener('pagehide', () => { previewUrls.forEach(URL.revokeObjectURL); feedUrls.forEach(URL.revokeObjectURL); });
     render();
 })();
+

@@ -18,14 +18,15 @@
     <main class="app-layout">
         <aside class="app-sidebar">
             <div class="app-profile-card">
-                <img src="img/FakebookLogo2.png" alt="프로필 기본 이미지">
+                <a href="#profile" class="sidebar-profile-link" aria-label="내 프로필 보기"><img id="sidebarAvatar" src="img/FakebookLogo2.png" alt="내 프로필 사진"></a>
                 <strong id="welcomeName">사용자</strong>
-                <span>FAKEBOOK에 오신 것을 환영합니다.</span>
+                <span id="sidebarBio">FAKEBOOK에 오신 것을 환영합니다.</span>
+                <a class="profile-settings-link" href="#settings">프로필 설정</a>
             </div>
-            <nav class="app-menu">
-                <a href="#home" id="homeLink" aria-current="page">홈</a>
-                <a href="#">친구</a>
-                <a href="#saved" id="savedLink">저장됨</a>
+            <nav class="app-menu" aria-label="주 메뉴">
+                <a href="#home" id="homeLink" aria-label="홈" title="홈" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg></a>
+                <a href="#friends" id="friendsLink" aria-label="친구" title="친구"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-4a6 6 0 0 1 12 0v4M16 4a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v4"/></svg></a>
+                <a href="#saved" id="savedLink" aria-label="저장됨" title="저장됨"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4V3Z"/></svg></a>
             </nav>
         </aside>
 
@@ -49,9 +50,12 @@
             <h2 id="feedTitle">홈</h2>
             <div id="localPosts"></div>
         </section>
+        <section id="socialPanel" class="social-panel" hidden aria-label="친구 및 프로필"></section>
     </main>
 
     <script src="js/auth.js"></script>
+    <script src="js/social.js"></script>
     <script src="js/feed.js"></script>
 </body>
 </html>
+
