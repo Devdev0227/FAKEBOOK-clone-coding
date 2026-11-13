@@ -325,10 +325,12 @@
     });
     window.addEventListener('hashchange', render);
     window.addEventListener('fakebook:profile', render);
+    window.addEventListener('fakebook:activity', render);
     window.addEventListener('fakebook:social-render', render);
     window.addEventListener('storage', event => { if (['fakebookPosts', 'fakebookCurrentUser', 'fakebookProfiles'].includes(event.key) || event.key === null) render(); });
     window.addEventListener('pagehide', () => { previewUrls.forEach(URL.revokeObjectURL); feedUrls.forEach(URL.revokeObjectURL); });
     render();
 })();
+
 
 

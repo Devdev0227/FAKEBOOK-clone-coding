@@ -20,6 +20,9 @@ store.set('fakebookUsers',JSON.stringify([{id:'alice',name:'김학생',birthday:
 store.set('fakebookPosts',JSON.stringify([{id:'legacy',author:'김학생',text:'기존 글',createdAt:'2026-01-01T00:00:00Z',comments:[]},{id:'bob-post',authorId:'bob',author:'이학생',text:'다른 계정 글',createdAt:'2026-01-02T00:00:00Z',comments:[]}]));
 const window={addEventListener(k,f){(events[k]??=[]).push(f)},dispatchEvent(e){events[e.type]?.forEach(f=>f(e))}};
 const context={document:{getElementById:byId,querySelector:s=>s==='.app-feed'?feed:s==='.feed-composer'?composer:byId(s.slice(1)),createElement:t=>new Element(t),createElementNS:(_,t)=>new Element(t)},window,Event:class{constructor(type){this.type=type}},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},location:{hash:'#home'},confirm:()=>true,console,URL:{revokeObjectURL(){}},crypto:require('node:crypto').webcrypto};
+store.set('fakebookDummyProfiles',JSON.stringify([{id:'demo-3',name:'가상 친구',avatar:'img/default-avatar.svg',dummy:true,ambientCatalog:1,sampleIndices:[0,1]}]));
+for(const id of ['alice','bob']) store.set('fakebookFriends:'+id,JSON.stringify({friends:[],dismissed:[],requests:[],nextRequestAt:Date.now()+86400000}));
+vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../js/ambient.js'),'utf8'),context);
 const social=fs.readFileSync(path.join(__dirname,'../js/social.js'),'utf8'),feedSource=fs.readFileSync(path.join(__dirname,'../js/feed.js'),'utf8');
 vm.createContext(context);vm.runInContext(social,context);vm.runInContext(feedSource,context);
 const go=hash=>{context.location.hash=hash;window.dispatchEvent({type:'hashchange'})};
@@ -31,7 +34,7 @@ const button=(text,list)=>{const n=list.find(n=>n.tagName==='button'&&n.textCont
 const texts=()=>walk(nodes.socialPanel).map(n=>n.textContent||'');
 (async()=>{
  assert.equal(nodes.localPosts.children.length,2); // 샘플이 홈을 채우지 않음.
- assert.equal(JSON.parse(store.get('fakebookPosts')).length,26);
+ assert.equal(JSON.parse(store.get('fakebookPosts')).length,2+JSON.parse(store.get('fakebookDummyProfiles')).reduce((n,p)=>n+p.sampleIndices.length,0));
  go('#profile');assert.equal(byId('profilePosts').children.length,1);assert(texts().includes('기존 글'));assert(!texts().includes('다른 계정 글'));
  assert(texts().includes('생년월일: 2006-04-12 (나만 보기)'));assert(texts().includes('친구 0명'));
  assert.equal(context.window.FakebookSocial.profile('alice').avatar,'img/default-avatar.svg');
@@ -59,3 +62,4 @@ const texts=()=>walk(nodes.socialPanel).map(n=>n.textContent||'');
  button('게시물 수정',profileNodes()).click();const editor=profileNodes().find(n=>n.className==='post-edit-form');editor.children[0].value='수정된 새 글';editor.events.submit({preventDefault(){}});assert(texts().includes('수정된 새 글'));
  console.log('PASS: signup birthday fallback, leap-date validation, owner/private/public views, anonymous avatar, per-author timeline including legacy posts, dummy post seeding/persistence, friend counts and timeline refresh, profile likes/bookmarks/comments, saved demo posts, ownership, new-post/edit integration');
 })().catch(error=>{console.error(error);process.exitCode=1});
+

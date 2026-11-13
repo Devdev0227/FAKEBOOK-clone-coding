@@ -10,41 +10,16 @@
     const button = (text, action, primary = false) => { const node = el('button', text, primary ? 'social-button primary' : 'social-button'); node.type = 'button'; node.addEventListener('click', action); return node; };
     const notice = el('p', '', 'social-notice'); notice.setAttribute('role', 'status'); notice.setAttribute('aria-live', 'polite');
     const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { notice.textContent = '저장하지 못했습니다. 브라우저 저장 공간과 설정을 확인해주세요.'; return false; } };
-    const pick = list => list[Math.floor(Math.random() * list.length)];
-    function avatar(seed) {
-        const backgrounds = ['#dae9ff', '#ffe2d5', '#d9f1e4', '#ece0ff', '#ffe9ad', '#d8edf1'];
-        const skin = ['#f2c5a4', '#c58b64', '#8d5c42', '#f6d9bf'][seed % 4];
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="${backgrounds[seed % 6]}"/><path d="M17 120a43 43 0 0 1 86 0" fill="hsl(${seed * 47 % 360} 48% 48%)"/><circle cx="60" cy="53" r="29" fill="${skin}"/><path d="M30 51c-4-39 64-47 61 0-13-3-24-14-29-20-7 13-18 18-32 20" fill="${seed % 2 ? '#49372e' : '#252d38'}"/><circle cx="49" cy="54" r="2"/><circle cx="71" cy="54" r="2"/><path d="M51 68q9 8 18 0" fill="none" stroke="#754b3b" stroke-width="3" stroke-linecap="round"/></svg>`;
-        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    }
-    let dummies = read('fakebookDummyProfiles', null);
-    if (!Array.isArray(dummies) || !dummies.length) {
-        const used = new Set();
-        dummies = Array.from({length: 12}, (_, index) => {
-            let name;
-            do { name = pick(['김','이','박','최','정','강','윤','한']) + pick(['서연','도윤','지우','민준','하린','시우','수빈','지호','예린','건우','유진','서준']); } while (used.has(name));
-            used.add(name);
-            return {id: `demo-${index + 1}`, name, bio: pick(['산책과 사진을 좋아해요.','새로운 취미를 찾고 있어요.','음악과 함께하는 일상 🎧','맛있는 음식과 여행 이야기','코딩하며 배우는 중 💻']), birthday: `${1998 + index % 8}-${String(index % 12 + 1).padStart(2, '0')}-${String(index + 3).padStart(2, '0')}`, avatar: avatar(Math.floor(Math.random() * 10000)), dummy: true};
-        });
-        write('fakebookDummyProfiles', dummies);
-    }
+    const activity = window.FakebookAmbient.create({storage: localStorage});
+    const dummies = activity.boot();
+    activity.tick(actor().id);
+    // 한 번 접속한 동안 순서를 유지하고, 다음 접속에서 새로 섞습니다.
+    const recommendationOrder = activity.shuffle(dummies.map(person => person.id));
     const DEFAULT_AVATAR = 'img/default-avatar.svg';
     function validBirthday(value, maxDate) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value < '1900-01-01' || value > maxDate) return false;
         const date = new Date(value + 'T00:00:00Z');
         return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-    }
-    // 일정한 ID로 한 번만 생성하며, 실제 홈 게시물과는 구분합니다.
-    function ensureDemoPosts() {
-        const raw = read('fakebookPosts', []); if (!Array.isArray(raw)) return;
-        const ids = new Set(raw.map(post => post.id));
-        const samples = ['오늘은 잠깐 산책하며 쉬어 갔어요. 여러분의 하루는 어땠나요?', '새로운 것을 배우는 시간이 즐겁네요. 작은 도전부터 시작해봐요!'];
-        const next = [...raw];
-        dummies.forEach((person, index) => samples.forEach((text, number) => {
-            const id = `demo-post:${person.id}:${number}`;
-            if (!ids.has(id)) next.push({id, authorId: person.id, author: person.name, text, demo: true, likedBy: [], legacyLikes: 0, savedBy: [], comments: [], media: [], createdAt: new Date(Date.now() - (index * 2 + number + 1) * 3600000).toISOString()});
-        }));
-        if (next.length !== raw.length) write('fakebookPosts', next);
     }
     function friendCount(id) {
         const dummyIndex = dummies.findIndex(person => person.id === id);
@@ -78,8 +53,7 @@
     }
     const stateKey = () => `fakebookFriends:${actor()?.id || ""}`;
     function state() {
-        const value = read(stateKey(), null);
-        return value || {friends: [], dismissed: [], requests: dummies.slice(0, 2).map(item => item.id)};
+        return activity.friends(actor().id);
     }
     function change(action) {
         if (!actor()?.id) { location.href = 'index.html'; return; }
@@ -110,7 +84,9 @@
         const title = el('h2'); const list = el('div', undefined, 'friend-list');
         const populate = () => {
             title.textContent = mode === 'suggestions' ? '알 수도 있는 사람' : mode === 'requests' ? '친구 요청' : '모든 친구';
-            const people = dummies.filter(p => (mode === 'all' ? s.friends.includes(p.id) : mode === 'requests' ? s.requests.includes(p.id) : !s.friends.includes(p.id) && !s.requests.includes(p.id) && !s.dismissed.includes(p.id)) && p.name.includes(search.trim()));
+            const people = dummies.filter(p => (mode === 'all' ? s.friends.includes(p.id) : mode === 'requests' ? s.requests.includes(p.id) : !s.friends.includes(p.id) && !s.requests.includes(p.id) && !s.dismissed.includes(p.id)) && p.name.includes(search.trim()))
+                .sort((a,b) => recommendationOrder.indexOf(a.id) - recommendationOrder.indexOf(b.id));
+            if (mode === 'suggestions') people.splice(activity.limits.recommendations);
             list.replaceChildren();
             for (const person of people) {
                 const row = el('article', undefined, 'friend-row');
@@ -215,11 +191,31 @@
         panel.append(notice);
         window.dispatchEvent(new Event('fakebook:social-render'));
     }
-    ensureDemoPosts();
     window.FakebookSocial = {profile, author, isFeed, profileId, notify: text => { if (!isFeed()) notice.textContent = text; }};
     window.addEventListener('hashchange', render);
     window.addEventListener('fakebook:profile', render);
     window.addEventListener('storage', event => { if (!event.key || (['fakebookProfiles', 'fakebookCurrentUser', 'fakebookUsers'].includes(event.key) || event.key.startsWith('fakebookFriends:'))) render(); });
+    // 한 탭에서 처리하는 동안 다른 탭이 같은 배치를 재생하지 않도록 Web Locks 사용.
+    let running = false;
+    function refreshActivity() {
+        if (running || !actor()?.id || document.hidden || location.hash === '#settings') return;
+        if (document.activeElement?.closest?.('input, textarea, select, .post-edit-form, .comment-editor')) return;
+        const process = () => {
+            if (activity.tick(actor()?.id)) {
+                render();
+                window.dispatchEvent(new Event('fakebook:activity'));
+            }
+        };
+        if (typeof navigator !== 'undefined' && navigator.locks) {
+            running = true;
+            navigator.locks.request('fakebook-activity', {ifAvailable: true}, lock => { if (lock) process(); }).catch(() => {}).finally(() => { running = false; });
+        } else process();
+    }
+    const timer = window.setInterval?.(refreshActivity, 20000);
+    window.addEventListener('focus', refreshActivity);
+    document.addEventListener?.('visibilitychange', refreshActivity);
+    window.addEventListener('pagehide', () => { if (timer !== undefined) window.clearInterval(timer); });
     render();
 })();
+
 
