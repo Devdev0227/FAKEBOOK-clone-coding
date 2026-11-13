@@ -147,6 +147,14 @@
     const newComment = (actor, text) => ({id: uid(), authorId: actor.id, author: actor.name, text, likedBy: [], createdAt: new Date().toISOString()});
     function commentRow(postId, comment, user, parentId = null, bindings = []) {
         const row = document.createElement('div'); row.className = parentId === null ? 'comment-item' : 'comment-item reply-item';
+        const find = post => parentId === null ? post.comments : (post.comments.find(item => item.id === parentId)?.replies || []);
+        if ((comment.hiddenBy || []).includes(user.id)) {
+            row.append(textElement('p', '숨긴 댓글입니다.'), button('다시 표시', () => change(postId, (post, actor) => {
+                const target = find(post).find(item => item.id === comment.id); if (!target) return false;
+                target.hiddenBy = (target.hiddenBy || []).filter(id => id !== actor.id);
+            })));
+            return row;
+        }
         const body = textElement('p', comment.text);
         const header = document.createElement('div'); header.className = 'comment-header';
         const author = document.createElement('div'); author.className = 'comment-author';
@@ -155,7 +163,6 @@
         if (comment.updatedAt) author.append(textElement('small', '수정됨'));
         header.append(author, actions);
         row.append(header, body);
-        const find = post => parentId === null ? post.comments : (post.comments.find(item => item.id === parentId)?.replies || []);
         const liked = comment.likedBy || [];
         const likeButton = iconButton('heart', liked.length, liked.includes(user.id), () => change(postId, (post, actor) => {
             const target = find(post).find(item => item.id === comment.id);
@@ -163,6 +170,12 @@
         }));
         bindings.push({button: likeButton, kind: 'heart', resolve: post => find(post).find(item => item.id === comment.id)});
         actions.append(likeButton);
+        if (comment.negative && parentId === null) actions.append(button('댓글 숨기기', () => change(postId, (post, actor) => {
+            const target = find(post).find(item => item.id === comment.id); if (!target) return false;
+            target.hiddenBy = [...new Set([...(target.hiddenBy || []), actor.id])];
+            if (target.defensePlan) target.defensePlan.cancelled = true;
+        })));
+
         if (comment.authorId === user.id) actions.append(button(parentId === null ? '댓글 삭제' : '답글 삭제', () => change(postId, (post, actor) => {
             const list = find(post); const index = list.findIndex(item => item.id === comment.id && item.authorId === actor.id);
             if (index < 0 || !confirm(parentId === null ? '이 댓글과 달린 답글을 모두 삭제할까요?' : '이 답글을 삭제할까요?')) return false;
@@ -391,6 +404,7 @@
     window.addEventListener('pagehide', event => { if (!event.persisted) { previewUrls.forEach(URL.revokeObjectURL); releaseViews(); } });
     render();
 })();
+
 
 
 

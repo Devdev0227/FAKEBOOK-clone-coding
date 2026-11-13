@@ -45,5 +45,12 @@ const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
  handlers.storage({key:'fakebookPosts'});await flush();assert.equal(root.children[0],updated);assert.equal(reads,2);
  context.location.hash='#saved';handlers.hashchange();assert.equal(root.children.length,1);assert.equal(root.children[0],updated);
  icons('bookmark',updated)[0].click();assert.equal(root.children[0].textContent,'저장한 게시물이 없습니다.');assert.equal(revoked.length,2);assert.equal(root.resetCount,resets);
+ const negative={id:'negative-parent',authorId:'demo-1',author:'가상 친구',text:'나는 별로 공감이 안 된다.',negative:true,likedBy:[],defensePlan:{dueAt:Date.now()+600000,done:false}};
+ store.set('fakebookPosts',JSON.stringify([{id:'hide-post',authorId:'alice',text:'내 글',createdAt:'2026-01-01',comments:[negative]}]));context.location.hash='#home';handlers.hashchange();
+ click('댓글 숨기기');let hidden=JSON.parse(store.get('fakebookPosts'))[0].comments[0];assert.deepEqual(hidden.hiddenBy,['alice']);assert(hidden.defensePlan.cancelled);assert(!walk(root).some(n=>n.textContent===negative.text));assert(walk(root).some(n=>n.textContent==='숨긴 댓글입니다.'));
+ click('다시 표시');assert(walk(root).some(n=>n.textContent===negative.text));assert.equal(JSON.parse(store.get('fakebookPosts'))[0].comments[0].defensePlan.cancelled,true);
+ click('댓글 숨기기');store.set('fakebookCurrentUser',JSON.stringify({id:'bob',name:'Bob'}));handlers.storage({key:'fakebookCurrentUser'});assert(walk(root).some(n=>n.textContent===negative.text));
+ console.log('PASS: negative hide/restore preserves data, cancels scheduled reply and scopes visibility to current account');
  console.log('PASS: post/comment/reply likes and bookmarks reuse DOM/focus; editor drafts survive; failed saves preserve state; comment update retains other cards and image/video playback/URLs; saved removal releases URLs and preserves empty state');
 })().catch(e=>{console.error(e);process.exitCode=1});
+
