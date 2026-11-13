@@ -40,6 +40,12 @@ const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
  assert.equal(root.children[0],a);assert.equal(root.children[1],b);assert.equal(active,heart);assert.equal(heart.attrs['aria-pressed'],'true');assert.equal(heart.children[1].textContent,'1');assert.equal(root.resetCount,resets);
  icons('heart',a)[1].click();icons('heart',a)[2].click();icons('bookmark',a)[0].click();
  assert.equal(root.children[0],a);assert.equal(walk(a).find(n=>n.tagName==='VIDEO'),video);assert.equal(video.currentTime,27);assert.equal(video.paused,false);assert.equal(reads,2);assert.equal(created,2);assert.deepEqual(revoked,[]);
+ // 자동 댓글 좋아요와 배정 정보만 바뀌면 카드/캐러셀을 유지하고 숫자만 갱신.
+ const automatic=JSON.parse(store.get('fakebookPosts'));
+ automatic[0].comments[0].likedBy.push('demo-2');
+ automatic[0].comments[0].commentLikePlan={version:1,postLikes:1,target:2,addedBy:['demo-2']};
+ store.set('fakebookPosts',JSON.stringify(automatic));handlers.storage({key:'fakebookPosts'});await flush();
+ assert.equal(root.children[0],a);assert.equal(icons('heart',a)[1].children[1].textContent,'2');assert.equal(walk(a).find(n=>n.tagName==='VIDEO'),video);assert.equal(reads,2);
  // 편집 중 다른 버튼을 눌러도 입력 내용과 펼친 폼을 보존.
  click('게시물 수정',a);let editor=walk(a).find(n=>n.className==='post-edit-form');editor.children[0].value='아직 저장하지 않은 초안';icons('heart',a)[0].click();assert.equal(editor.hidden,false);assert.equal(editor.children[0].value,'아직 저장하지 않은 초안');assert.equal(root.children[0],a);
  click('수정 취소',editor);
@@ -57,6 +63,7 @@ const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
  assert(walk(root).some(n=>n.textContent===legacy.text));assert(!walk(root).some(n=>['댓글 숨기기','다시 표시','숨긴 댓글입니다.'].includes(n.textContent)));
  console.log('PASS: post/comment/reply likes and bookmarks reuse DOM/focus; editor drafts survive; failed saves preserve state; comment update retains other cards and image/video playback/URLs; saved removal releases URLs and preserves empty state');
 })().catch(e=>{console.error(e);process.exitCode=1});
+
 
 
 

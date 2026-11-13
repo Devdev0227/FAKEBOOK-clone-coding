@@ -965,6 +965,7 @@
             }
             repairConversations(next);
             decoratePosts(next);
+            assignCommentLikes(next);
             if (original !== JSON.stringify(next)) savePosts(next);
         }
         const normalizeContext = text => String(text || '').trim().replace(/\s+/g,' ');
@@ -1028,7 +1029,35 @@
                 visit(post.comments);
             }
         }
-        function savePosts(posts) { decoratePosts(posts); return write('fakebookPosts',posts); }
+        function assignCommentLikes(posts) {
+            for (const post of posts) {
+                const legacy = post.legacyLikes ?? (Array.isArray(post.likedBy) ? 0 : post.likes);
+                const metric = Math.max(0, Math.floor(Number(legacy) || 0)) + (Array.isArray(post.likedBy) ? post.likedBy.length : 0);
+                const visit = comments => { for (const comment of comments || []) {
+                    if (comment.id && comment.authorId && !comment.commentLikePlan) {
+                        const existing = Array.isArray(comment.likedBy) ? comment.likedBy : [];
+                        const legacyCount = Math.max(0, Math.floor(Number(comment.legacyLikes) || 0));
+                        const available = pool.filter(person => person.id !== comment.authorId && !existing.includes(person.id));
+                        const ceiling = Math.min(Number.MAX_SAFE_INTEGER, metric + 3);
+                        const target = int(0, Math.min(ceiling, existing.length + legacyCount + available.length));
+                        const count = Math.max(0, target - existing.length - legacyCount);
+                        const added = shuffle(available).slice(0, count).map(person => person.id);
+                        comment.likedBy = [...existing, ...added];
+                        comment.commentLikePlan = {version:1, postLikes:metric, target, addedBy:added};
+                    }
+                    visit(comment.replies);
+                }};
+                visit(post.comments);
+            }
+        }
+        function savePosts(posts) { decoratePosts(posts); assignCommentLikes(posts); return write('fakebookPosts',posts); }
+        function tickCommentLikes() {
+            const posts = read('fakebookPosts', []);
+            if (!Array.isArray(posts)) return false;
+            const original = JSON.stringify(posts);
+            assignCommentLikes(posts);
+            return original !== JSON.stringify(posts) && savePosts(posts);
+        }
         function negativeCandidates(post) { return conversationOptions(post).map(pair=>pair.negative); }
         function repairConversations(posts) {
             for (const post of posts) post.comments = (post.comments || []).filter(comment=> {
@@ -1248,13 +1277,14 @@
             }
             return original!==JSON.stringify(posts) && savePosts(posts);
         }
-        function tick(id) { if (!id) return false; const requests=tickRequests(id); const own=tickOwnConversations(id); const posts=tickPosts(id); const defenses=tickDefenses(id); return Boolean(requests||own||posts||defenses); }
-        return {boot,tick,tickRequests,tickPosts,tickOwnConversations,tickDefenses,autoComment,conversationPair,conversationOptions,resolveCommentPair,positiveCandidates,decoratePosts,negativeCandidates,friends,shuffle,recommendations,ensureHomeNegative,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
+        function tick(id) { if (!id) return false; const requests=tickRequests(id); const own=tickOwnConversations(id); const posts=tickPosts(id); const defenses=tickDefenses(id); const commentLikes=tickCommentLikes(); return Boolean(requests||own||posts||defenses||commentLikes); }
+        return {boot,tick,tickRequests,tickPosts,tickOwnConversations,tickDefenses,tickCommentLikes,autoComment,conversationPair,conversationOptions,resolveCommentPair,positiveCandidates,decoratePosts,negativeCandidates,friends,shuffle,recommendations,ensureHomeNegative,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
     }
     const api={create,LIMITS,TEXTS,CONTENT,AVATARS,TEMPLATE_PAIRS,OWN_PAIRS,OWN_COMMENT_PAIRS,POSITIVE_COMMENTS,SECONDARY_DEFENSES,NEGATIVE_COMMENTS,DEFENSE_COMMENTS};
     if (typeof module!=='undefined' && module.exports) module.exports=api;
     else scope.FakebookAmbient=api;
 })(typeof window!=='undefined'?window:globalThis);
+
 
 
 
