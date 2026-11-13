@@ -1,12 +1,12 @@
 // 게시물 메타데이터는 localStorage, 첨부 파일은 IndexedDB에 저장합니다.
 (() => {
     'use strict';
-    const root = document.querySelector('#localPosts');
-    if (!root) return;
+    const homeRoot = document.querySelector('#localPosts');
+    if (!homeRoot) return;
     const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
     const current = () => { const actor = read('fakebookCurrentUser', null); return actor && window.FakebookSocial ? {...actor, name: window.FakebookSocial.profile(actor.id, actor.name).name} : actor; };
     if (!current()?.id) { location.href = 'index.html'; return; }
-    const message = text => { document.querySelector('#feedMessage').textContent = text; };
+    const message = text => { document.querySelector('#feedMessage').textContent = text; window.FakebookSocial?.notify?.(text); };
     const uid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const users = read('fakebookUsers', []);
     const owner = item => {
@@ -225,17 +225,23 @@
     function textElement(tag, text) { const element = document.createElement(tag); element.textContent = text; return element; }
     async function render() {
         const version = ++renderVersion;
-        feedUrls.forEach(URL.revokeObjectURL); feedUrls = []; root.replaceChildren();
+        feedUrls.forEach(URL.revokeObjectURL); feedUrls = [];
         const user = current(); if (!user?.id) { location.href = 'index.html'; return; }
-        if (window.FakebookSocial && !window.FakebookSocial.isFeed()) return;
+        const profileId = window.FakebookSocial?.profileId?.() || null;
+        const root = profileId ? document.getElementById('profilePosts') : homeRoot;
+        if (!root || (window.FakebookSocial && !window.FakebookSocial.isFeed() && !profileId)) return;
+        root.replaceChildren();
         const saved = location.hash === '#saved';
-        document.querySelector('#feedTitle').textContent = saved ? '저장한 게시물' : '홈';
-        for (const [id, active] of [['homeLink', !saved], ['savedLink', saved]]) {
-            const link = document.getElementById(id); active ? link.setAttribute('aria-current', 'page') : link.removeAttribute('aria-current');
+        if (!profileId) {
+            document.querySelector('#feedTitle').textContent = saved ? '저장한 게시물' : '홈';
+            for (const [id, active] of [['homeLink', !saved], ['savedLink', saved]]) {
+                const link = document.getElementById(id); active ? link.setAttribute('aria-current', 'page') : link.removeAttribute('aria-current');
+            }
+            document.querySelector('.feed-composer').hidden = saved;
         }
-        document.querySelector('.feed-composer').hidden = saved;
-        const posts = getPosts().filter(post => !saved || post.savedBy.includes(user.id)).reverse();
-        if (!posts.length) root.append(textElement('p', saved ? '저장한 게시물이 없습니다.' : '첫 게시물을 작성해보세요.'));
+        const posts = getPosts().filter(post => profileId ? post.authorId === profileId : saved ? post.savedBy.includes(user.id) : !post.demo)
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        if (!posts.length) root.append(textElement('p', profileId ? '아직 작성한 게시물이 없습니다.' : saved ? '저장한 게시물이 없습니다.' : '첫 게시물을 작성해보세요.'));
         for (const post of posts) {
             const article = document.createElement('article'); article.className = 'feed-post';
             const header = document.createElement('div'); header.className = 'feed-post-header';
@@ -319,8 +325,10 @@
     });
     window.addEventListener('hashchange', render);
     window.addEventListener('fakebook:profile', render);
+    window.addEventListener('fakebook:social-render', render);
     window.addEventListener('storage', event => { if (['fakebookPosts', 'fakebookCurrentUser', 'fakebookProfiles'].includes(event.key) || event.key === null) render(); });
     window.addEventListener('pagehide', () => { previewUrls.forEach(URL.revokeObjectURL); feedUrls.forEach(URL.revokeObjectURL); });
     render();
 })();
+
 

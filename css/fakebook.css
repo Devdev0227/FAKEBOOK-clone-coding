@@ -621,3 +621,13 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
     .friend-name { font-size: 16px; }
     .profile-large-avatar { width: 112px; height: 112px; }
 }
+
+
+/* 프로필 타임라인과 생년월일 공개 설정 */
+.profile-posts { display: grid; gap: 16px; min-width: 0; }
+.profile-detail { padding-bottom: 24px; border-bottom: 1px solid #dddfe2; }
+.profile-friend-count { font-weight: 600; color: #65676b; }
+.profile-birthday { color: #65676b; }
+.profile-form .birthday-visibility { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.profile-form .birthday-visibility input { width: 20px; min-height: 20px; height: 20px; flex: 0 0 20px; }
+#birthdayNote { color: #65676b; font-size: 13px; line-height: 1.5; }
