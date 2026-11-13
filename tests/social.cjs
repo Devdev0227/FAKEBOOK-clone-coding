@@ -43,11 +43,10 @@ go('#home');assert.equal(feed.hidden,false);assert.equal(nodes.socialPanel.hidde
 nodes.sidebarAvatar.onerror();assert.equal(nodes.sidebarAvatar.src,'img/default-avatar.svg');assert.equal(nodes.sidebarAvatar.onerror,null);
 const failed=window.FakebookSocial.author('demo-3','가상 친구').children[0];failed.onerror();assert.equal(failed.src,'img/default-avatar.svg');assert.equal(failed.onerror,null);
 const homeData=JSON.parse(store.get('fakebookPosts'));const selection=window.FakebookSocial.homePostIds(homeData);assert.deepEqual(window.FakebookSocial.homePostIds(homeData),selection);homeData[0].comments.push({text:'추가 댓글'});assert.deepEqual(window.FakebookSocial.homePostIds(homeData),selection);
-login('alice');go('#settings');form=all().find(n=>n.tagName==='form');field('negativeComments').checked=false;submit();fire();assert.equal(JSON.parse(store.get('fakebookSimulation:alice')).negativeComments,false);
-go('#settings');form=all().find(n=>n.tagName==='form');assert.equal(field('negativeComments').checked,false);field('negativeComments').checked=true;go('#profile');assert.equal(JSON.parse(store.get('fakebookSimulation:alice')).negativeComments,false);
-login('bob');go('#settings');form=all().find(n=>n.tagName==='form');assert.equal(field('negativeComments').checked,true);
+login('alice');go('#settings');form=all().find(n=>n.tagName==='form');assert.equal(field('negativeComments'),undefined);assert(!all().some(n=>n.textContent==='가벼운 부정적 댓글 시뮬레이션'));
 store.delete('fakebookCurrentUser');window.dispatchEvent({type:'storage',key:'fakebookCurrentUser'});assert.equal(context.location.href,'index.html');
 console.log('PASS: seeded profile persistence; friend add/remove, request accept/reject, dismiss/restore/search; profile validation/save/cancel/quota failure; display name/author links; account isolation and stale form guard; routes and logout');
+
 
 
 
