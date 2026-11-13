@@ -242,7 +242,13 @@
         const allPosts = getPosts();
         const homeIds = new Set(!profileId && !saved ? window.FakebookSocial?.homePostIds?.(allPosts) || [] : []);
         const posts = allPosts.filter(post => profileId ? post.authorId === profileId : saved ? post.savedBy.includes(user.id) : !post.demo || homeIds.has(post.id))
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            .sort((a, b) => {
+                if (!profileId && !saved) {
+                    const ownFirst = Number(b.authorId === user.id) - Number(a.authorId === user.id);
+                    if (ownFirst) return ownFirst;
+                }
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
         if (!posts.length) root.append(textElement('p', profileId ? '아직 작성한 게시물이 없습니다.' : saved ? '저장한 게시물이 없습니다.' : '첫 게시물을 작성해보세요.'));
         for (const post of posts) {
             const article = document.createElement('article'); article.className = 'feed-post';
@@ -333,6 +339,7 @@
     window.addEventListener('pagehide', () => { previewUrls.forEach(URL.revokeObjectURL); feedUrls.forEach(URL.revokeObjectURL); });
     render();
 })();
+
 
 
 
