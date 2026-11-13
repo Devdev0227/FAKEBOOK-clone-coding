@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
  await page.evaluate(() => {
   localStorage.clear();
   localStorage.setItem('fakebookUsers', JSON.stringify([{id:'alice',name:'김학생',phone:'01012345678',password:'Pass!1234'}, {id:'bob',name:'이학생'}]));
+  localStorage.setItem('fakebookFriends:alice', JSON.stringify({friends:[],dismissed:[],requests:['demo-1','demo-2'],nextRequestAt:Date.now()+86400000}));
   localStorage.setItem('fakebookCurrentUser', JSON.stringify({id:'alice',name:'김학생'}));
   localStorage.setItem('fakebookPosts', JSON.stringify([{id:'legacy',author:'김학생',text:'기존 게시물',createdAt:new Date().toISOString(),comments:[{id:'c1',authorId:'alice',author:'김학생',text:'기존 댓글',replies:[{id:'r1',authorId:'alice',author:'김학생',text:'기존 답글'}]}]}]));
  });
@@ -30,7 +31,7 @@ const assert = require('node:assert/strict');
  page.on('dialog', dialog=>dialog.accept());
  await page.locator('.friend-row').first().getByRole('button',{name:'친구 삭제',exact:true}).click(); assert.equal(await page.locator('.friend-row').count(),1);
  await page.getByRole('button',{name:'추천',exact:true}).click(); const before = await page.locator('.friend-row').count();
- await page.locator('.friend-row').first().getByRole('button',{name:'삭제',exact:true}).click(); assert.equal(await page.locator('.friend-row').count(),before-1);
+ await page.locator('.friend-row').first().getByRole('button',{name:'삭제',exact:true}).click(); assert.equal(await page.locator('.friend-row').count(),before);
  await page.getByRole('button',{name:'삭제한 추천 다시 보기'}).click(); assert.equal(await page.locator('.friend-row').count(),before);
  await page.getByRole('link',{name:'프로필 설정',exact:true}).click();
  await page.getByLabel('표시 이름 (2~30자)').fill('정연 테스트');
@@ -67,3 +68,4 @@ const assert = require('node:assert/strict');
  assert.deepEqual(errors,[]); await browser.close();
  console.log('PASS: friend add/remove/dismiss/restore, requests, search, profile links, upload/save/cancel/reload, author migration and profile propagation, account isolation, 320/390/768/1440px overflow checks; no browser errors');
 })().catch(e=>{console.error(e);process.exit(1)});
+

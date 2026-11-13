@@ -16,6 +16,8 @@ const window={addEventListener(k,f){(events[k]??=[]).push(f)},dispatchEvent(e){e
 const context={document:{getElementById:id=>nodes[id],querySelector:s=>s==='.app-feed'?feed:null,createElement:tag=>new Element(tag)},window,Event:class{constructor(type){this.type=type}},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>{if(fail)throw Error('quota');store.set(k,v)}},location:{hash:'#friends'},console,confirm:()=>true,URL:{},Image:class{}};
 const walk=n=>[n,...n.children.flatMap(walk)], all=()=>walk(nodes.socialPanel),find=text=>{const n=all().find(n=>n.textContent===text);assert(n,text);return n};
 const fire=()=>window.dispatchEvent({type:'hashchange'});const go=hash=>{context.location.hash=hash;fire()};
+store.set('fakebookFriends:alice',JSON.stringify({friends:[],dismissed:[],requests:['demo-1','demo-2'],nextRequestAt:Date.now()+86400000}));
+vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../js/ambient.js'),'utf8'),context);
 const source=fs.readFileSync(path.join(__dirname,'../js/social.js'),'utf8');vm.runInNewContext(source,context);
 const rows=()=>all().filter(n=>n.className==='friend-row');const state=()=>JSON.parse(store.get('fakebookFriends:alice'));
 assert.equal(rows().length,10);const seeded=store.get('fakebookDummyProfiles');fire();assert.equal(store.get('fakebookDummyProfiles'),seeded);
@@ -24,8 +26,8 @@ find('모든 친구 (1)').click();assert.equal(rows().length,1);
 find('친구 삭제').click();assert.equal(state().friends.length,0);
 find('요청 (2)').click();walk(rows()[0]).find(n=>n.textContent==='확인').click();assert.equal(state().requests.length,1);assert.equal(state().friends.length,1);
 walk(rows()[0]).find(n=>n.textContent==='삭제').click();assert.equal(state().requests.length,0);
-find('추천').click();let count=rows().length;walk(rows()[0]).find(n=>n.textContent==='삭제').click();assert.equal(rows().length,count-1);
-find('삭제한 추천 다시 보기').click();assert.equal(rows().length,count+1);
+find('추천').click();let count=rows().length;const dismissedName=walk(rows()[0]).find(n=>n.className==='friend-name').textContent;walk(rows()[0]).find(n=>n.textContent==='삭제').click();assert.equal(rows().length,10);assert(!all().some(n=>n.className==='friend-name'&&n.textContent===dismissedName));
+find('삭제한 추천 다시 보기').click();assert.equal(rows().length,10);assert.equal(state().dismissed.length,0);
 let search=all().find(n=>n.type==='search');search.value='no-match';search.events.input();assert.equal(rows().length,0);search.value='';search.events.input();
 go('#profile/demo-3');assert(all().some(n=>n.className==='profile-detail'));
 go('#settings');let form=all().find(n=>n.tagName==='form');const field=id=>walk(form).find(n=>n.id===id);const submit=()=>form.events.submit({preventDefault(){}});
@@ -40,3 +42,4 @@ go('#friends');find('모든 친구 (0)').click();assert.equal(rows().length,0);a
 go('#home');assert.equal(feed.hidden,false);assert.equal(nodes.socialPanel.hidden,true);assert.equal(nodes.homeLink.attrs['aria-current'],'page');go('#saved');assert.equal(nodes.savedLink.attrs['aria-current'],'page');
 store.delete('fakebookCurrentUser');window.dispatchEvent({type:'storage',key:'fakebookCurrentUser'});assert.equal(context.location.href,'index.html');
 console.log('PASS: seeded profile persistence; friend add/remove, request accept/reject, dismiss/restore/search; profile validation/save/cancel/quota failure; display name/author links; account isolation and stale form guard; routes and logout');
+
