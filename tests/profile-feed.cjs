@@ -2,8 +2,10 @@
 const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict'),path=require('node:path');
 class Element {
  constructor(tag='div'){this.tagName=tag;this.children=[];this.events={};this.attrs={};this.value='';this.files=[];}
- append(...nodes){this.children.push(...nodes);}
- replaceChildren(){this.children=[];}
+ append(...nodes){for (const node of nodes) { node.remove(); node.parentNode = this; this.children.push(node); }}
+ replaceChildren(){for(const node of this.children)node.parentNode=null;this.children=[];}
+    remove() { if (this.parentNode) { const list = this.parentNode.children; list.splice(list.indexOf(this), 1); this.parentNode = null; } }
+    insertBefore(node, before) { node.remove(); const index = before ? this.children.indexOf(before) : this.children.length; if(index < 0) throw Error('invalid reference'); this.children.splice(index, 0, node); node.parentNode = this; }
  setAttribute(k,v){this.attrs[k]=v;}
  removeAttribute(k){delete this.attrs[k];}
  addEventListener(k,f){this.events[k]=f;}
@@ -62,5 +64,6 @@ const texts=()=>walk(nodes.socialPanel).map(n=>n.textContent||'');
  button('게시물 수정',profileNodes()).click();const editor=profileNodes().find(n=>n.className==='post-edit-form');editor.children[0].value='수정된 새 글';editor.events.submit({preventDefault(){}});assert(texts().includes('수정된 새 글'));
  console.log('PASS: signup birthday fallback, leap-date validation, owner/private/public views, anonymous avatar, per-author timeline including legacy posts, dummy post seeding/persistence, friend counts and timeline refresh, profile likes/bookmarks/comments, saved demo posts, ownership, new-post/edit integration');
 })().catch(error=>{console.error(error);process.exitCode=1});
+
 
 

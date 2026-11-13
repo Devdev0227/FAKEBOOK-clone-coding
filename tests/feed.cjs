@@ -2,8 +2,10 @@
 const vm = require('node:vm'), fs = require('node:fs'), assert = require('node:assert/strict'), path = require('node:path');
 class Element {
     constructor(tag = 'div') { this.tagName = tag; this.children = []; this.attrs = {}; this.events = {}; this.value = ''; }
-    append(...nodes) { this.children.push(...nodes); }
-    replaceChildren() { this.children = []; }
+    append(...nodes) { for (const node of nodes) { node.remove(); node.parentNode = this; this.children.push(node); } }
+    replaceChildren() { for (const node of this.children) node.parentNode = null; this.children = []; }
+    remove() { if (this.parentNode) { const list = this.parentNode.children; list.splice(list.indexOf(this), 1); this.parentNode = null; } }
+    insertBefore(node, before) { node.remove(); const index = before ? this.children.indexOf(before) : this.children.length; if(index < 0) throw Error('invalid reference'); this.children.splice(index, 0, node); node.parentNode = this; }
     setAttribute(k, v) { this.attrs[k] = v; }
     removeAttribute(k) { delete this.attrs[k]; }
     addEventListener(k, f) { this.events[k] = f; }
@@ -94,3 +96,4 @@ const submit = (form, text) => { form.children[0].value = text; form.events.subm
     context.confirm = () => true; click('댓글 삭제'); assert.equal(posts()[0].comments.length, 0);
     console.log('PASS: comment/reply edit validation, cancel, persistence, ownership and interaction preservation; post edit/save/cancel/empty validation/persistence/ownership, preservation of interactions, icon toggles, replies on existing comments, reply likes/delete, reload, ownership, bookmark isolation, parent deletion/cancel');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+

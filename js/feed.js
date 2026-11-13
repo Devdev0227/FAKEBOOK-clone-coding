@@ -58,7 +58,23 @@
         });
     }
     const allowed = new Set(['image/jpeg','image/png','image/gif','image/webp','video/mp4','video/webm','video/ogg']);
-    let selected = [], previewUrls = [], feedUrls = [], renderVersion = 0;
+    let selected = [], previewUrls = [];
+    const renderedPosts = new Map();
+    let renderedRoot = null, renderedActor = null;
+    function releaseViews() {
+        for (const view of renderedPosts.values()) view.urls.forEach(URL.revokeObjectURL);
+        renderedPosts.clear();
+    }
+    function syncIcons(view, post, user) {
+        for (const binding of view.bindings) {
+            const target = binding.resolve(post); if (!target) continue;
+            const list = binding.kind === 'heart' ? target.likedBy || [] : target.savedBy || [];
+            binding.button.updateIcon((Number(target.legacyLikes) || 0) + list.length, list.includes(user.id));
+        }
+    }
+    // 좋아요·북마크·예약 시각만 바뀌면 기존 카드/입력창/미디어를 유지합니다.
+    const contentSignature = post => JSON.stringify(post, (key, value) =>
+        ['likedBy', 'savedBy', 'legacyLikes', 'likes', 'ambient'].includes(key) ? undefined : value);
     const input = document.querySelector('#postMedia');
     function clearPreview() {
         previewUrls.forEach(URL.revokeObjectURL); previewUrls = [];
@@ -95,10 +111,8 @@
         element.addEventListener('click', action); return element;
     }
     function iconButton(kind, count, pressed, action) {
-        const label = kind === 'heart' ? `좋아요 ${count}개${pressed ? ', 취소' : ''}` : (pressed ? '저장 취소' : '게시물 저장');
         const element = button('', action, pressed);
         element.className = `icon-button ${kind}-button`;
-        element.setAttribute('aria-label', label); element.title = label;
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
         svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
@@ -107,7 +121,15 @@
             ? 'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z'
             : 'M6 3h12v18l-6-4-6 4V3Z');
         svg.append(path); element.append(svg);
-        if (kind === 'heart') element.append(textElement('span', String(count)));
+        const countNode = kind === 'heart' ? textElement('span', String(count)) : null;
+        if (countNode) element.append(countNode);
+        element.updateIcon = (nextCount, nextPressed) => {
+            const label = kind === 'heart' ? `좋아요 ${nextCount}개${nextPressed ? ', 취소' : ''}` : (nextPressed ? '저장 취소' : '게시물 저장');
+            element.setAttribute('aria-label', label); element.title = label;
+            element.setAttribute('aria-pressed', String(nextPressed));
+            if (countNode) countNode.textContent = String(nextCount);
+        };
+        element.updateIcon(count, pressed);
         return element;
     }
     function commentForm(label, onSubmit) {
@@ -123,7 +145,7 @@
         return form;
     }
     const newComment = (actor, text) => ({id: uid(), authorId: actor.id, author: actor.name, text, likedBy: [], createdAt: new Date().toISOString()});
-    function commentRow(postId, comment, user, parentId = null) {
+    function commentRow(postId, comment, user, parentId = null, bindings = []) {
         const row = document.createElement('div'); row.className = parentId === null ? 'comment-item' : 'comment-item reply-item';
         const body = textElement('p', comment.text);
         const header = document.createElement('div'); header.className = 'comment-header';
@@ -135,10 +157,12 @@
         row.append(header, body);
         const find = post => parentId === null ? post.comments : (post.comments.find(item => item.id === parentId)?.replies || []);
         const liked = comment.likedBy || [];
-        actions.append(iconButton('heart', liked.length, liked.includes(user.id), () => change(postId, (post, actor) => {
+        const likeButton = iconButton('heart', liked.length, liked.includes(user.id), () => change(postId, (post, actor) => {
             const target = find(post).find(item => item.id === comment.id);
             if (target) target.likedBy = toggle(target.likedBy || [], actor.id);
-        })));
+        }));
+        bindings.push({button: likeButton, kind: 'heart', resolve: post => find(post).find(item => item.id === comment.id)});
+        actions.append(likeButton);
         if (comment.authorId === user.id) actions.append(button(parentId === null ? '댓글 삭제' : '답글 삭제', () => change(postId, (post, actor) => {
             const list = find(post); const index = list.findIndex(item => item.id === comment.id && item.authorId === actor.id);
             if (index < 0 || !confirm(parentId === null ? '이 댓글과 달린 답글을 모두 삭제할까요?' : '이 답글을 삭제할까요?')) return false;
@@ -210,7 +234,7 @@
             replyButton.setAttribute('aria-expanded', 'false');
             const replyActions = document.createElement('div'); replyActions.className = 'comment-reply-actions';
             replyActions.append(replyButton); row.append(replyActions);
-            for (const reply of comment.replies || []) replies.append(commentRow(postId, reply, user, comment.id));
+            for (const reply of comment.replies || []) replies.append(commentRow(postId, reply, user, comment.id, bindings));
             row.append(replies, form);
         }
         return row;
@@ -224,13 +248,13 @@
     }
     function textElement(tag, text) { const element = document.createElement(tag); element.textContent = text; return element; }
     async function render() {
-        const version = ++renderVersion;
-        feedUrls.forEach(URL.revokeObjectURL); feedUrls = [];
         const user = current(); if (!user?.id) { location.href = 'index.html'; return; }
         const profileId = window.FakebookSocial?.profileId?.() || null;
         const root = profileId ? document.getElementById('profilePosts') : homeRoot;
         if (!root || (window.FakebookSocial && !window.FakebookSocial.isFeed() && !profileId)) return;
-        root.replaceChildren();
+        if (renderedRoot !== root || renderedActor !== user.id) {
+            releaseViews(); root.replaceChildren(); renderedRoot = root; renderedActor = user.id;
+        }
         const saved = location.hash === '#saved';
         if (!profileId) {
             document.querySelector('#feedTitle').textContent = saved ? '저장한 게시물' : '홈';
@@ -249,8 +273,14 @@
                 }
                 return new Date(b.createdAt) - new Date(a.createdAt);
             });
-        if (!posts.length) root.append(textElement('p', profileId ? '아직 작성한 게시물이 없습니다.' : saved ? '저장한 게시물이 없습니다.' : '첫 게시물을 작성해보세요.'));
+        const ordered = [], profileStamp = localStorage.getItem('fakebookProfiles') || '';
         for (const post of posts) {
+            const signature = contentSignature(post) + profileStamp;
+            const previous = renderedPosts.get(post.id);
+            if (previous?.signature === signature) {
+                syncIcons(previous, post, user); ordered.push(previous.article); continue;
+            }
+            const bindings = [];
             const article = document.createElement('article'); article.className = 'feed-post';
             const header = document.createElement('div'); header.className = 'feed-post-header';
             header.append(window.FakebookSocial ? window.FakebookSocial.author(post.authorId, post.author) : textElement('strong', post.author), textElement('span', new Date(post.createdAt).toLocaleString('ko-KR') + (post.updatedAt ? ' · 수정됨' : '')));
@@ -294,24 +324,46 @@
                     else error.textContent = '저장하지 못했습니다. 내용을 유지했으니 다시 시도해주세요.';
                 });
             }
-            const gallery = document.createElement('div'); gallery.className = 'media-grid'; article.append(gallery);
+            const mediaKey = JSON.stringify(post.media);
+            const keepMedia = previous?.mediaKey === mediaKey;
+            if (previous && !keepMedia) previous.urls.forEach(URL.revokeObjectURL);
+            const gallery = keepMedia ? previous.gallery : document.createElement('div');
+            gallery.className = 'media-grid'; article.append(gallery);
             const actions = document.createElement('div'); actions.className = 'post-actions';
-            actions.append(iconButton('heart', post.legacyLikes + post.likedBy.length, post.likedBy.includes(user.id), () => change(post.id, (target, actor) => { target.likedBy = toggle(target.likedBy, actor.id); })),
-                iconButton('bookmark', 0, post.savedBy.includes(user.id), () => change(post.id, (target, actor) => { target.savedBy = toggle(target.savedBy, actor.id); })));
+            const heart = iconButton('heart', post.legacyLikes + post.likedBy.length, post.likedBy.includes(user.id), () => change(post.id, (target, actor) => { target.likedBy = toggle(target.likedBy, actor.id); }));
+            const bookmark = iconButton('bookmark', 0, post.savedBy.includes(user.id), () => change(post.id, (target, actor) => { target.savedBy = toggle(target.savedBy, actor.id); }));
+            bindings.push({button: heart, kind: 'heart', resolve: target => target}, {button: bookmark, kind: 'bookmark', resolve: target => target});
+            actions.append(heart, bookmark);
             const commentCount = post.comments.reduce((sum, comment) => sum + 1 + (comment.replies || []).length, 0);
             article.append(actions, textElement('h3', `댓글 ${commentCount}`));
-            for (const comment of post.comments) article.append(commentRow(post.id, comment, user));
+            for (const comment of post.comments) article.append(commentRow(post.id, comment, user, null, bindings));
             const form = commentForm('댓글', text => change(post.id, (target, actor) => target.comments.push(newComment(actor, text))));
-            article.append(form); root.append(article);
-            for (const media of post.media) {
-                try {
-                    const file = await getFile(media.id);
-                    if (version !== renderVersion) return;
-                    if (!file || !allowed.has(file.type)) { gallery.append(textElement('p', '첨부 파일을 찾을 수 없습니다.')); continue; }
-                    const url = URL.createObjectURL(file); feedUrls.push(url); gallery.append(mediaElement(file, url));
-                } catch { if (version === renderVersion) gallery.append(textElement('p', '첨부 파일을 불러오지 못했습니다.')); }
-            }
+            article.append(form);
+            const view = {article, gallery, mediaKey, signature, bindings, urls: keepMedia ? previous.urls : []};
+            renderedPosts.set(post.id, view); ordered.push(article);
+            if (!keepMedia) void (async () => {
+                for (const media of post.media) {
+                    try {
+                        const file = await getFile(media.id);
+                        if (renderedPosts.get(post.id)?.gallery !== gallery) return;
+                        if (!file || !allowed.has(file.type)) { gallery.append(textElement('p', '첨부 파일을 찾을 수 없습니다.')); continue; }
+                        const url = URL.createObjectURL(file); view.urls.push(url); gallery.append(mediaElement(file, url));
+                    } catch {
+                        if (renderedPosts.get(post.id)?.gallery === gallery) gallery.append(textElement('p', '첨부 파일을 불러오지 못했습니다.'));
+                    }
+                }
+            })();
         }
+        const visibleIds = new Set(posts.map(post => post.id));
+        for (const [id, view] of renderedPosts) {
+            if (!visibleIds.has(id)) { view.urls.forEach(URL.revokeObjectURL); renderedPosts.delete(id); }
+        }
+        // 순서가 같은 카드는 이동하지 않고, 변경된 카드만 교체합니다.
+        ordered.forEach((article, index) => {
+            if (root.children[index] !== article) root.insertBefore(article, root.children[index] || null);
+        });
+        for (const node of [...root.children]) if (!ordered.includes(node)) node.remove();
+        if (!posts.length) root.append(textElement('p', profileId ? '아직 작성한 게시물이 없습니다.' : saved ? '저장한 게시물이 없습니다.' : '첫 게시물을 작성해보세요.'));
     }
     document.querySelector('#postButton').addEventListener('click', async event => {
         const actor = current(); if (!actor?.id) { location.href = 'index.html'; return; }
@@ -336,9 +388,10 @@
     window.addEventListener('fakebook:activity', render);
     window.addEventListener('fakebook:social-render', render);
     window.addEventListener('storage', event => { if (['fakebookPosts', 'fakebookCurrentUser', 'fakebookProfiles'].includes(event.key) || event.key === null) render(); });
-    window.addEventListener('pagehide', () => { previewUrls.forEach(URL.revokeObjectURL); feedUrls.forEach(URL.revokeObjectURL); });
+    window.addEventListener('pagehide', event => { if (!event.persisted) { previewUrls.forEach(URL.revokeObjectURL); releaseViews(); } });
     render();
 })();
+
 
 
 
