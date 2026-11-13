@@ -25,20 +25,20 @@
         '영화 한 편 보고 왔다. 여운이 남아서 음악을 다시 듣는 중.',
         '이번 주도 수고 많았다. 다음 주에는 조금 덜 바쁘면 좋겠다.'
     ];
+    const AVATARS = Object.freeze({
+        default: ['img/default-avatar.svg'],
+        face: Array.from({length:8}, (_,i)=>`img/profiles/face-${String(i+1).padStart(2,'0')}.svg`),
+        landscape: ['lake','mountain','ocean','sunrise','sunset'].map(name=>`img/profiles/${name}.webp`),
+        flower: ['poppies','bouquet'].map(name=>`img/profiles/${name}.webp`),
+        animal: ['cat','dog'].map(name=>`img/profiles/${name}.webp`),
+        object: ['coffee','books','gardening'].map(name=>`img/profiles/${name}.webp`)
+    });
     function create({storage, now = Date.now, random = Math.random} = {}) {
         const read = (key, fallback) => { try { return JSON.parse(storage.getItem(key)) ?? fallback; } catch { return fallback; } };
         const write = (key, value) => { try { storage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
         const int = (min, max) => min + Math.floor(random() * (max - min + 1));
         const pick = values => values[int(0, values.length - 1)];
         const shuffle = values => { const copy = [...values]; for (let i = copy.length - 1; i > 0; i--) { const j = int(0, i); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; };
-        const svgUrl = body => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">${body}</svg>`);
-        function avatar(kind, seed) {
-            if (kind === 'default') return 'img/default-avatar.svg';
-            const hue = seed % 360;
-            if (kind === 'landscape') return svgUrl(`<rect width="120" height="120" fill="hsl(${190 + seed % 40} 65% 85%)"/><circle cx="88" cy="27" r="13" fill="#ffe49c"/><path d="M-10 100 35 30 90 120M42 120 90 52 135 120" fill="hsl(${120 + seed % 50} 24% 44%)"/><path d="M0 96q40-16 120 5v19H0" fill="hsl(${190 + seed % 30} 42% 60%)"/>`);
-            if (kind === 'flower') return svgUrl(`<rect width="120" height="120" fill="hsl(${hue} 50% 92%)"/><path d="M60 120V52m0 44q-32 0-28-23 22 0 28 23m0-8q30 0 28-23-22 0-28 23" stroke="#528b61" stroke-width="5" fill="#85b87b"/><g fill="hsl(${(hue + 70) % 360} 65% 72%)"><ellipse cx="60" cy="36" rx="14" ry="23"/><ellipse cx="60" cy="36" rx="14" ry="23" transform="rotate(72 60 55)"/><ellipse cx="60" cy="36" rx="14" ry="23" transform="rotate(144 60 55)"/><ellipse cx="60" cy="36" rx="14" ry="23" transform="rotate(216 60 55)"/><ellipse cx="60" cy="36" rx="14" ry="23" transform="rotate(288 60 55)"/></g><circle cx="60" cy="55" r="13" fill="#ffd773"/>`);
-            return svgUrl(`<rect width="120" height="120" fill="hsl(${hue} 50% 88%)"/><path d="M17 120a43 43 0 0 1 86 0" fill="hsl(${(hue+80)%360} 40% 48%)"/><circle cx="60" cy="53" r="29" fill="${pick(['#f2c5a4','#c58b64','#8d5c42','#f6d9bf'])}"/><path d="M30 51c-4-39 64-47 61 0-13-3-24-14-29-20-7 13-18 18-32 20" fill="#393333"/><circle cx="49" cy="54" r="2"/><circle cx="71" cy="54" r="2"/><path d="M51 68q9 8 18 0" fill="none" stroke="#754b3b" stroke-width="3"/>`);
-        }
         let pool = [];
         function boot() {
             const old = read('fakebookDummyProfiles', []);
@@ -50,12 +50,20 @@
                 const name = combinations.length ? pick(combinations) : `친구 ${i}`; names.add(name);
                 pool.push({id:`demo-${i}`, name, dummy:true, bio:pick(['사진과 산책을 좋아해요.','천천히 배우는 중','음악과 함께하는 일상 🎧','맛있는 음식과 여행 이야기','작은 일상을 기록합니다.']), birthday:`${int(1996,2007)}-${String(int(1,12)).padStart(2,'0')}-${String(int(1,28)).padStart(2,'0')}`});
             }
-            const kinds = shuffle(Array.from({length:pool.length}, (_,i)=>['default','face','landscape','flower'][i%4]));
+            const mix = ['default','default','default','default','face','face','face','face','landscape','landscape','landscape','landscape','flower','flower','flower','animal','animal','animal','object','object'];
+            const kinds = shuffle(Array.from({length:pool.length}, (_,i)=>mix[i%mix.length]));
+            const decks = Object.fromEntries(Object.entries(AVATARS).map(([kind,files])=>[kind,shuffle(files)]));
+            const used = {};
             pool.forEach((person, index) => {
                 if (!person.ambientCatalog) {
-                    person.avatarKind = kinds[index]; person.avatar = avatar(person.avatarKind, int(0,10000));
                     person.sampleIndices = shuffle(TEXTS.map((_,i)=>i)).slice(0,int(0,3));
                     person.ambientCatalog = 1;
+                }
+                if (person.avatarAssetVersion !== 1) {
+                    const kind = kinds[index], deck = decks[kind];
+                    const offset = used[kind] || 0; used[kind] = offset + 1;
+                    person.avatarKind = kind; person.avatar = deck[offset % deck.length];
+                    person.avatarAssetVersion = 1;
                 }
             });
             if (JSON.stringify(old) !== JSON.stringify(pool)) write('fakebookDummyProfiles',pool);
@@ -139,7 +147,8 @@
         function tick(id) { if (!id) return false; const requests=tickRequests(id); const posts=tickPosts(id); return Boolean(requests||posts); }
         return {boot,tick,tickRequests,tickPosts,friends,shuffle,limits:LIMITS,get profiles(){return pool;}};
     }
-    const api={create,LIMITS,TEXTS};
+    const api={create,LIMITS,TEXTS,AVATARS};
     if (typeof module!=='undefined' && module.exports) module.exports=api;
     else scope.FakebookAmbient=api;
 })(typeof window!=='undefined'?window:globalThis);
+

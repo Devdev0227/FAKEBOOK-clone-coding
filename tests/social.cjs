@@ -40,6 +40,9 @@ go('#settings');form=all().find(n=>n.tagName==='form');field('profileName').valu
 go('#settings');form=all().find(n=>n.tagName==='form');login('bob');submit();assert.equal(window.FakebookSocial.profile('bob').name,'이학생');
 go('#friends');find('모든 친구 (0)').click();assert.equal(rows().length,0);assert.equal(nodes.welcomeName.textContent,'이학생님');
 go('#home');assert.equal(feed.hidden,false);assert.equal(nodes.socialPanel.hidden,true);assert.equal(nodes.homeLink.attrs['aria-current'],'page');go('#saved');assert.equal(nodes.savedLink.attrs['aria-current'],'page');
+nodes.sidebarAvatar.onerror();assert.equal(nodes.sidebarAvatar.src,'img/default-avatar.svg');assert.equal(nodes.sidebarAvatar.onerror,null);
+const failed=window.FakebookSocial.author('demo-3','가상 친구').children[0];failed.onerror();assert.equal(failed.src,'img/default-avatar.svg');assert.equal(failed.onerror,null);
 store.delete('fakebookCurrentUser');window.dispatchEvent({type:'storage',key:'fakebookCurrentUser'});assert.equal(context.location.href,'index.html');
 console.log('PASS: seeded profile persistence; friend add/remove, request accept/reject, dismiss/restore/search; profile validation/save/cancel/quota failure; display name/author links; account isolation and stale form guard; routes and logout');
+
 
