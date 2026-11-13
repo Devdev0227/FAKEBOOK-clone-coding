@@ -631,3 +631,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
 .profile-form .birthday-visibility { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .profile-form .birthday-visibility input { width: 20px; min-height: 20px; height: 20px; flex: 0 0 20px; }
 #birthdayNote { color: #65676b; font-size: 13px; line-height: 1.5; }
+
+
+/* 좋아요 숫자/선택 상태가 바뀔 때 버튼 너비가 흔들리지 않도록 유지 */
+.icon-button span { display: inline-block; font-weight: 600; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }
