@@ -9,9 +9,9 @@ put('fakebookDummyProfiles',[{id:'demo-1',name:'기존 친구',avatar:'old',bio:
 put('fakebookPosts',[{id:'demo-post:demo-1:1',authorId:'demo-1',author:'기존 친구',text:'옛 반복 글',demo:true,likedBy:['alice'],savedBy:['alice'],comments:[{id:'keep',text:'기존 댓글'}]}]);
 const activity=create({storage,now:()=>time,random:rng});activity.boot();
 assert.equal(activity.profiles.length,40);assert.equal(activity.profiles[0].name,'기존 친구');assert.equal(activity.profiles[0].bio,'보존');
-assert.equal(new Set(activity.profiles.map(p=>p.avatarKind)).size,6);assert.equal(TEXTS.length,20);
+assert.equal(new Set(activity.profiles.map(p=>p.avatarKind)).size,6);assert.equal(TEXTS.length,50);
 assert(activity.profiles.every(p=>p.sampleIndices.length>=0&&p.sampleIndices.length<=3));
-let preserved=read('fakebookPosts').find(p=>p.id==='demo-post:demo-1:1');assert(preserved);assert.deepEqual(preserved.comments,[{id:'keep',text:'기존 댓글'}]);assert.deepEqual(preserved.likedBy,['alice']);assert.notEqual(preserved.text,'옛 반복 글');
+let preserved=read('fakebookPosts').find(p=>p.id==='demo-post:demo-1:1');assert(preserved);assert.deepEqual(preserved.comments,[{id:'keep',text:'기존 댓글'}]);assert.deepEqual(preserved.likedBy,['alice']);assert.equal(preserved.text,'옛 반복 글');
 const snapshot=map.get('fakebookPosts'),catalog=map.get('fakebookDummyProfiles');create({storage,now:()=>time,random:rng}).boot();assert.equal(map.get('fakebookPosts'),snapshot);assert.equal(map.get('fakebookDummyProfiles'),catalog);
 for(const p of activity.profiles){const count=read('fakebookPosts').filter(x=>x.authorId===p.id).length;assert(count<=3);}
 activity.tickRequests('alice');assert(read('fakebookFriends:alice').requests.length<=4);
@@ -30,5 +30,6 @@ forced=.1;for(let i=0;i<40;i++){time+=13*M;activity.tickPosts('alice');}posts=re
 let p=posts[0];assert.equal(p.ambient.comments,3);p.comments=[];put('fakebookPosts',posts);time+=13*M;activity.tickPosts('alice');assert.equal(read('fakebookPosts')[0].comments.length,0);
 const oldPost={id:'old',authorId:'alice',text:'old',createdAt:new Date(time-8*D).toISOString()};put('fakebookPosts',[oldPost]);assert.equal(activity.tickPosts('alice'),false);assert.deepEqual(read('fakebookPosts'),[oldPost]);
 fail=true;time+=D;assert.doesNotThrow(()=>activity.tick('alice'));fail=false;
-console.log('PASS: 40 varied profiles, stable 0–3/20 sample allocation and legacy interaction migration; expiring bounded requests/cooldowns/offline catch-up/account isolation; probabilistic reactions, no duplicate likes/comments, age/lifetime/batch limits, deletion preservation and quota failures');
+console.log('PASS: 40 varied profiles, stable 0–3/50 sample allocation and legacy interaction migration; expiring bounded requests/cooldowns/offline catch-up/account isolation; probabilistic reactions, no duplicate likes/comments, age/lifetime/batch limits, deletion preservation and quota failures');
+
 

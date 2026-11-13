@@ -239,7 +239,9 @@
             }
             document.querySelector('.feed-composer').hidden = saved;
         }
-        const posts = getPosts().filter(post => profileId ? post.authorId === profileId : saved ? post.savedBy.includes(user.id) : !post.demo)
+        const allPosts = getPosts();
+        const homeIds = new Set(!profileId && !saved ? window.FakebookSocial?.homePostIds?.(allPosts) || [] : []);
+        const posts = allPosts.filter(post => profileId ? post.authorId === profileId : saved ? post.savedBy.includes(user.id) : !post.demo || homeIds.has(post.id))
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         if (!posts.length) root.append(textElement('p', profileId ? '아직 작성한 게시물이 없습니다.' : saved ? '저장한 게시물이 없습니다.' : '첫 게시물을 작성해보세요.'));
         for (const post of posts) {
@@ -331,6 +333,7 @@
     window.addEventListener('pagehide', () => { previewUrls.forEach(URL.revokeObjectURL); feedUrls.forEach(URL.revokeObjectURL); });
     render();
 })();
+
 
 
 
