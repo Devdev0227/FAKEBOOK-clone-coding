@@ -74,7 +74,7 @@
     }
     // 좋아요·북마크·예약 시각만 바뀌면 기존 카드/입력창/미디어를 유지합니다.
     const contentSignature = post => JSON.stringify(post, (key, value) =>
-        ['likedBy', 'savedBy', 'legacyLikes', 'likes', 'ambient'].includes(key) ? undefined : value);
+        ['likedBy', 'savedBy', 'legacyLikes', 'likes', 'ambient', 'ownConversation', 'defensePlan'].includes(key) ? undefined : value);
     const input = document.querySelector('#postMedia');
     function clearPreview() {
         previewUrls.forEach(URL.revokeObjectURL); previewUrls = [];
@@ -391,6 +391,7 @@
     window.addEventListener('pagehide', event => { if (!event.persisted) { previewUrls.forEach(URL.revokeObjectURL); releaseViews(); } });
     render();
 })();
+
 
 
 

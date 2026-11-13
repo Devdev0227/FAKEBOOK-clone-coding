@@ -809,12 +809,68 @@
             state.lastWasNegative = result.negative === true;
             write(key,state); return result;
         }
+        const ownFallback = {id:'own:general',negative:'굳이 이런 얘기까지 올릴 필요가 있나 싶네.',defense:'자기 일상을 기록할 수 있는 공간이잖아. 올릴 필요가 없다고 단정하진 말자.'};
+        const additionalDefense = '같은 경험도 사람마다 의미가 다를 수 있지. 다른 사람의 기록을 깎아내리지는 말자.';
+        function tickOwnConversations(id) {
+            const posts=read('fakebookPosts',[]), members=read('fakebookUsers',[]), time=now();
+            if (!Array.isArray(posts)) return false;
+            const original=JSON.stringify(posts); let budget=2;
+            for (const post of posts) {
+                const matches=members.filter(user=>user.name===post.author);
+                const owner=post.authorId || (matches.length===1 ? matches[0].id : null);
+                if (post.demo || owner!==id) continue;
+                post.comments ||= [];
+                let negative=post.comments.find(comment=>comment.negative);
+                if (!post.ownConversation) {
+                    post.ownConversation={dueAt:time+int(1,3)*MINUTE,started:false,completed:false};
+                }
+                const job=post.ownConversation;
+                if (job.completed) continue;
+                if (job.started) {
+                    if (!post.comments.some(comment=>comment.id===job.commentId)) job.completed=true;
+                    continue;
+                }
+                if (!negative) {
+                    if (job.dueAt>time || !budget) continue;
+                    const pair=conversationPair(post) || ownFallback;
+                    const people=pool.filter(person=>person.id!==id);
+                    const blunt=people.filter(person=>person.temperament==='blunt');
+                    const person=pick(blunt.length?blunt:people); if (!person) continue;
+                    negative={id:`own-negative:${post.id}`,authorId:person.id,author:person.name,text:pair.negative,likedBy:[],simulated:true,negative:true,ownNegative:true,negativeAt:time,negativePairId:pair.id,negativeContextText:normalizeContext(post.text),negativeContextVersion:2,createdAt:new Date(time).toISOString()};
+                    post.comments.push(negative); post.negativeCommentUsed=true; budget--;
+                }
+                const defenses=(negative.replies||[]).filter(reply=>reply.defense);
+                const pair=conversationPair(post);
+                const primary=pair && pair.negative===negative.text ? pair.defense : ownFallback.defense;
+                negative.defensePlan={accountId:id,guaranteed:true,dueAt:time+int(1,3)*MINUTE,target: defenses.length ? Math.min(2,defenses.length) : int(1,2),primaryDefense:primary,done:defenses.length>0};
+                job.started=true; job.commentId=negative.id; job.completed=negative.defensePlan.done;
+            }
+            return original!==JSON.stringify(posts) && write('fakebookPosts',posts);
+        }
         function tickDefenses(id) {
             const posts = read('fakebookPosts',[]); if (!Array.isArray(posts)) return false;
             const original = JSON.stringify(posts), time = now(); let budget = 2;
             for (const post of posts) for (const comment of post.comments || []) {
                 const plan = comment.defensePlan;
                 if (!comment.negative || !plan || plan.done || plan.cancelled || (plan.accountId && plan.accountId !== id)) continue;
+                if (plan.guaranteed) {
+                    if (!budget || plan.dueAt>time) continue;
+                    const existing=(comment.replies||[]).filter(reply=>reply.defense);
+                    const needed=Math.max(0,Math.min(2,plan.target||1)-existing.length);
+                    const actors=new Set([comment.authorId,post.authorId,...(comment.replies||[]).map(reply=>reply.authorId)]);
+                    const candidates=shuffle(pool.filter(person=>!actors.has(person.id) && person.temperament!=='blunt'));
+                    comment.replies ||= [];
+                    for (let i=0;i<needed && budget && candidates.length;i++) {
+                        const person=candidates.shift(), ordinal=existing.length+i;
+                        const sameContext=normalizeContext(post.text)===comment.negativeContextText;
+                        const text=ordinal===0 ? (sameContext?plan.primaryDefense:ownFallback.defense) : additionalDefense;
+                        comment.replies.push({id:`own-defense:${comment.id}:${ordinal}`,authorId:person.id,author:person.name,text,likedBy:[],simulated:true,defense:true,createdAt:new Date(time).toISOString()}); budget--;
+                    }
+                    plan.done=(comment.replies||[]).filter(reply=>reply.defense).length>=Math.min(2,plan.target||1);
+                    if (plan.done && post.ownConversation) post.ownConversation.completed=true;
+                    continue;
+                }
+
                 if (time-(comment.negativeAt || time) > LIMITS.postAge) { plan.cancelled=true; continue; }
                 const pair = conversationPair(post);
                 if (!pair || pair.id !== comment.negativePairId || pair.negative !== comment.text || normalizeContext(post.text) !== comment.negativeContextText) {plan.cancelled=true;continue;}
@@ -883,7 +939,7 @@
                 const owner=post.authorId || (members.filter(u=>u.name===post.author).length===1 ? members.find(u=>u.name===post.author).id : null);
                 const created=Date.parse(post.createdAt), age=time-created;
                 if (owner!==id || post.demo || !Number.isFinite(age) || age<0 || age>LIMITS.postAge) continue;
-                const meta=post.ambient || {nextAt:created+int(1,4)*MINUTE,likes:(post.likedBy||[]).filter(x=>known.has(x)).length,comments:(post.comments||[]).filter(c=>c.simulated).length};
+                const meta=post.ambient || {nextAt:created+int(1,4)*MINUTE,likes:(post.likedBy||[]).filter(x=>known.has(x)).length,comments:(post.comments||[]).filter(c=>c.simulated && !c.ownNegative).length};
                 post.ambient=meta;
                 if (meta.nextAt>time) continue;
                 // 미접속 기간 전체를 재생하지 않고 한 번의 제한된 배치로 처리합니다.
@@ -901,7 +957,7 @@
                         const text=pick(['잘 읽었어.','공유해줘서 고마워!','소식 잘 보고 가요.',...(post.media?.length ? ['사진·영상 잘 봤어!','기록 남겨줘서 고마워.'] : ['이야기 남겨줘서 고마워.','다음 소식도 기다릴게.'])].filter(text=>!(post.comments||[]).some(c=>c.simulated&&c.text===text)));
                         if (!text) continue;
                         post.comments ||= [];
-                        post.comments.push(autoComment(post,id,{id:`ambient:${post.id}:${person.id}:${meta.comments}`,authorId:person.id,author:person.name,text,likedBy:[],simulated:true,createdAt:new Date(Math.min(time,due)).toISOString()},.03)); meta.comments++;
+                        post.comments.push(autoComment(post,id,{id:`ambient:${post.id}:${person.id}:${meta.comments}`,authorId:person.id,author:person.name,text,likedBy:[],simulated:true,createdAt:new Date(Math.min(time,due)).toISOString()},0)); meta.comments++;
                     } else {post.likedBy ||= []; post.likedBy.push(person.id);meta.likes++;}
                     budget--; due+=MINUTE;
                 }
@@ -909,13 +965,14 @@
             }
             return original!==JSON.stringify(posts) && write('fakebookPosts',posts);
         }
-        function tick(id) { if (!id) return false; const requests=tickRequests(id); const posts=tickPosts(id); const defenses=tickDefenses(id); return Boolean(requests||posts||defenses); }
-        return {boot,tick,tickRequests,tickPosts,tickDefenses,autoComment,conversationPair,negativeCandidates,friends,shuffle,recommendations,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
+        function tick(id) { if (!id) return false; const requests=tickRequests(id); const own=tickOwnConversations(id); const posts=tickPosts(id); const defenses=tickDefenses(id); return Boolean(requests||own||posts||defenses); }
+        return {boot,tick,tickRequests,tickPosts,tickOwnConversations,tickDefenses,autoComment,conversationPair,negativeCandidates,friends,shuffle,recommendations,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
     }
     const api={create,LIMITS,TEXTS,CONTENT,AVATARS,TEMPLATE_PAIRS,OWN_PAIRS,NEGATIVE_COMMENTS,DEFENSE_COMMENTS};
     if (typeof module!=='undefined' && module.exports) module.exports=api;
     else scope.FakebookAmbient=api;
 })(typeof window!=='undefined'?window:globalThis);
+
 
 
 
