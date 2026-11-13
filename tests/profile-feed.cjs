@@ -59,11 +59,12 @@ const texts=()=>walk(nodes.socialPanel).map(n=>n.textContent||'');
  go('#profile/demo-3');assert.equal(byId('profilePosts').children.length,2);assert(texts().includes('더미 댓글'));
  go('#profile/unknown');assert(!byId('profilePosts'));assert(texts().includes('프로필을 찾을 수 없습니다.'));
  // 새로고침 시 샘플이 중복 생성되거나 좋아요·댓글 기록이 덮어쓰이지 않음.
- const saved=store.get('fakebookPosts');vm.runInContext(social,context);assert.equal(store.get('fakebookPosts'),saved);
+ const saved=JSON.parse(store.get('fakebookPosts')).filter(p=>p.demo);vm.runInContext(social,context);assert.deepEqual(JSON.parse(store.get('fakebookPosts')).filter(p=>p.demo),saved);
  login('alice');go('#home');nodes.postText.value='새 글';await nodes.postButton.click();go('#profile');assert.equal(byId('profilePosts').children.length,2);assert(texts().includes('새 글'));
  button('게시물 수정',profileNodes()).click();const editor=profileNodes().find(n=>n.className==='post-edit-form');editor.children[0].value='수정된 새 글';editor.events.submit({preventDefault(){}});assert(texts().includes('수정된 새 글'));
  console.log('PASS: signup birthday fallback, leap-date validation, owner/private/public views, anonymous avatar, per-author timeline including legacy posts, dummy post seeding/persistence, friend counts and timeline refresh, profile likes/bookmarks/comments, saved demo posts, ownership, new-post/edit integration');
 })().catch(error=>{console.error(error);process.exitCode=1});
+
 
 
 

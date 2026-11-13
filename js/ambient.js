@@ -791,14 +791,15 @@
                 return true;
             });
         }
-        function autoComment(post, accountId, normal, rate) {
+        function autoComment(post, accountId, normal, rate, force = false) {
             const result = {...normal,civilityReviewed:true};
             if (!accountId) return result;
             const key = `fakebookConversation:${accountId}`, state = read(key,{}), time = now();
-            const blunt = pool.filter(person=>person.temperament==='blunt' && person.id!==post.authorId && !(post.comments||[]).some(c=>c.authorId===person.id));
+            let blunt = pool.filter(person=>person.temperament==='blunt' && person.id!==post.authorId && !(post.comments||[]).some(c=>c.authorId===person.id));
+            if (force && !blunt.length) blunt=pool.filter(person=>person.temperament==='blunt' && person.id!==post.authorId);
             const pair = conversationPair(post);
-            const allowed = pair && !post.negativeCommentUsed && !(post.comments||[]).some(c=>c.negative) && !state.lastWasNegative && time >= (state.nextNegativeAt || 0);
-            if (allowed && blunt.length && random() < rate) {
+            const allowed = pair && !post.negativeCommentUsed && !(post.comments||[]).some(c=>c.negative) && (force || (!state.lastWasNegative && time >= (state.nextNegativeAt || 0)));
+            if (allowed && blunt.length && (force || random() < rate)) {
                 const person = pick(blunt);
                 result.authorId = person.id; result.author = person.name; result.text = pair.negative;
                 result.negative = true; result.negativeAt = time; result.negativePairId = pair.id; result.negativeContextText = normalizeContext(post.text); result.negativeContextVersion = 2;
@@ -896,13 +897,40 @@
             return selected;
         }
         const contentKey = text => String(text || '').trim().replace(/\s+/g,' ');
-        function selectHomePosts(posts, limit = 10) {
-            const seen = new Set(posts.filter(p=>!p.demo).map(p=>contentKey(p.text))), authors = new Set(), selected = [];
-            for (const post of shuffle(posts.filter(p=>p.demo))) {
-                const key = contentKey(post.text);
-                if (!key || seen.has(key) || authors.has(post.authorId)) continue;
+        function eligibleHomePosts(posts) {
+            const ownTexts=new Set(posts.filter(p=>!p.demo).map(p=>contentKey(p.text)));
+            return posts.filter(p=>p.demo && contentKey(p.text) && !ownTexts.has(contentKey(p.text)));
+        }
+        function ensureHomeNegative(posts, accountId) {
+            if (!accountId) return false;
+            const candidates=eligibleHomePosts(posts);
+            if (candidates.some(post=>(post.comments||[]).some(comment=>comment.negative))) return false;
+            const chosen=shuffle(candidates.filter(post=>!post.negativeCommentUsed && conversationPair(post)))[0];
+            if (!chosen) return false;
+            // 최신 저장값을 다시 읽어 다른 상호작용을 덮어쓰지 않습니다.
+            const live=read('fakebookPosts',[]); if (!Array.isArray(live)) return false;
+            const target=live.find(post=>post.id===chosen.id);
+            if (!target || target.negativeCommentUsed || (target.comments||[]).some(comment=>comment.negative)) return false;
+            const normal={id:`home-negative:${target.id}`,authorId:'',author:'',text:'',likedBy:[],simulated:true,homeExample:true,createdAt:new Date(now()).toISOString()};
+            const comment=autoComment(target,accountId,normal,1,true);
+            if (!comment.negative) return false;
+            target.comments ||= []; target.comments.push(comment);
+            if (!write('fakebookPosts',live)) return false;
+            Object.assign(chosen,target); return true;
+        }
+        function selectHomePosts(posts, limit = 10, preferredIds = null) {
+            if (limit<=0) return [];
+            const candidates=eligibleHomePosts(posts), byId=new Map(candidates.map(post=>[post.id,post]));
+            const preferred=(preferredIds||[]).map(id=>byId.get(id)).filter(Boolean);
+            const rest=shuffle(candidates.filter(post=>!preferredIds?.includes(post.id)));
+            const available=[...preferred,...rest];
+            const featured=available.find(post=>(post.comments||[]).some(comment=>comment.negative));
+            const seen=new Set(), authors=new Set(), selected=[];
+            for (const post of [...(featured?[featured]:[]),...available]) {
+                const key=contentKey(post.text);
+                if (seen.has(key) || authors.has(post.authorId)) continue;
                 seen.add(key); authors.add(post.authorId); selected.push(post.id);
-                if (selected.length >= limit) break;
+                if (selected.length>=limit) break;
             }
             return selected;
         }
@@ -966,12 +994,13 @@
             return original!==JSON.stringify(posts) && write('fakebookPosts',posts);
         }
         function tick(id) { if (!id) return false; const requests=tickRequests(id); const own=tickOwnConversations(id); const posts=tickPosts(id); const defenses=tickDefenses(id); return Boolean(requests||own||posts||defenses); }
-        return {boot,tick,tickRequests,tickPosts,tickOwnConversations,tickDefenses,autoComment,conversationPair,negativeCandidates,friends,shuffle,recommendations,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
+        return {boot,tick,tickRequests,tickPosts,tickOwnConversations,tickDefenses,autoComment,conversationPair,negativeCandidates,friends,shuffle,recommendations,ensureHomeNegative,selectHomePosts,limits:LIMITS,get profiles(){return pool;}};
     }
     const api={create,LIMITS,TEXTS,CONTENT,AVATARS,TEMPLATE_PAIRS,OWN_PAIRS,NEGATIVE_COMMENTS,DEFENSE_COMMENTS};
     if (typeof module!=='undefined' && module.exports) module.exports=api;
     else scope.FakebookAmbient=api;
 })(typeof window!=='undefined'?window:globalThis);
+
 
 
 
