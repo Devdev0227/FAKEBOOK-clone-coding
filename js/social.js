@@ -28,12 +28,46 @@
         });
         write('fakebookDummyProfiles', dummies);
     }
+    const DEFAULT_AVATAR = 'img/default-avatar.svg';
+    function validBirthday(value, maxDate) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value < '1900-01-01' || value > maxDate) return false;
+        const date = new Date(value + 'T00:00:00Z');
+        return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+    }
+    // 일정한 ID로 한 번만 생성하며, 실제 홈 게시물과는 구분합니다.
+    function ensureDemoPosts() {
+        const raw = read('fakebookPosts', []); if (!Array.isArray(raw)) return;
+        const ids = new Set(raw.map(post => post.id));
+        const samples = ['오늘은 잠깐 산책하며 쉬어 갔어요. 여러분의 하루는 어땠나요?', '새로운 것을 배우는 시간이 즐겁네요. 작은 도전부터 시작해봐요!'];
+        const next = [...raw];
+        dummies.forEach((person, index) => samples.forEach((text, number) => {
+            const id = `demo-post:${person.id}:${number}`;
+            if (!ids.has(id)) next.push({id, authorId: person.id, author: person.name, text, demo: true, likedBy: [], legacyLikes: 0, savedBy: [], comments: [], media: [], createdAt: new Date(Date.now() - (index * 2 + number + 1) * 3600000).toISOString()});
+        }));
+        if (next.length !== raw.length) write('fakebookPosts', next);
+    }
+    function friendCount(id) {
+        const dummyIndex = dummies.findIndex(person => person.id === id);
+        if (dummyIndex >= 0) {
+            // 가상 친구의 기본 친구 수 + 이 브라우저에서 추가한 실제 계정 수.
+            const known = new Set([...read('fakebookUsers', []).map(user => user.id), actor()?.id].filter(Boolean));
+            return 24 + dummyIndex * 7 + [...known].filter(userId => read(`fakebookFriends:${userId}`, {}).friends?.includes(id)).length;
+        }
+        return new Set(read(`fakebookFriends:${id}`, {}).friends || []).size;
+    }
+    function profileId() {
+        if (location.hash !== '#profile' && !location.hash.startsWith('#profile/')) return null;
+        let id; try { id = location.hash === '#profile' ? actor()?.id : decodeURIComponent(location.hash.slice(9)); } catch { return null; }
+        return id && (id === actor()?.id || dummies.some(p => p.id === id) || read('fakebookUsers', []).some(p => p.id === id)) ? id : null;
+    }
     function profile(id, fallback = '사용자') {
         const dummy = dummies.find(item => item.id === id);
-        if (dummy) return dummy;
+        if (dummy) return {...dummy, birthdayPublic: true, friendCount: friendCount(id)};
         const saved = read('fakebookProfiles', {})[id] || {};
         const member = read('fakebookUsers', []).find(item => item.id === id);
-        return {id, name: saved.name || member?.name || (actor()?.id === id ? actor().name : fallback), bio: saved.bio || '', birthday: saved.birthday || '', avatar: safeImage(saved.avatar) || 'img/FakebookLogo2.png'};
+        const birthdayPublic = saved.birthdayPublic ?? member?.birthdayPublic ?? false;
+        const birthday = id === actor()?.id || birthdayPublic ? (saved.birthday ?? member?.birthday ?? '') : '';
+        return {id, name: saved.name || member?.name || (actor()?.id === id ? actor().name : fallback), bio: saved.bio || '', birthday, birthdayPublic, friendCount: friendCount(id), avatar: safeImage(saved.avatar) || DEFAULT_AVATAR};
     }
     function safeImage(src) { return typeof src === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(src) ? src : ''; }
     function image(person, className = 'social-avatar') { const node = el('img', undefined, className); node.src = person.avatar; node.alt = `${person.name} 프로필 사진`; return node; }
@@ -96,10 +130,13 @@
         if (!own && !dummies.some(p => p.id === id) && !read('fakebookUsers', []).some(p => p.id === id)) { panel.append(el('p', '프로필을 찾을 수 없습니다.')); return; }
         const back = el('a', '← 친구 목록', 'profile-back'); back.href = '#friends'; panel.append(back);
         const card = el('div', undefined, 'profile-detail');
-        card.append(image(person, 'profile-large-avatar'), el('h1', person.name), el('p', person.bio || '아직 소개가 없습니다.', 'profile-bio'), el('p', person.birthday ? `생년월일: ${person.birthday}` : '생년월일 미설정'));
+        card.append(image(person, 'profile-large-avatar'), el('h1', person.name), el('p', person.bio || '아직 소개가 없습니다.', 'profile-bio'), el('p', `친구 ${person.friendCount}명${person.dummy ? ' · 가상 프로필' : ''}`, 'profile-friend-count'));
+        if (person.birthday) card.append(el('p', `생년월일: ${person.birthday}${own && !person.birthdayPublic ? ' (나만 보기)' : ''}`, 'profile-birthday'));
+        else if (own) card.append(el('p', '생년월일 미설정', 'profile-birthday'));
         if (own) { const link = el('a', '프로필 설정', 'social-button primary'); link.href = '#settings'; card.append(link); }
         else if (person.dummy) { const s = state(); card.append(relationship(person, s.friends.includes(id) ? 'all' : s.requests.includes(id) ? 'requests' : 'suggestions')); }
-        panel.append(card);
+        panel.append(card, el('h2', person.dummy ? '작성한 게시물 · 샘플' : '작성한 게시물'));
+        const posts = el('div', undefined, 'profile-posts'); posts.id = 'profilePosts'; panel.append(posts);
     }
     function settings() {
         const accountId = actor().id, person = profile(accountId); let photo = person.avatar; let busy = false, version = 0;
@@ -108,13 +145,16 @@
         const file = el('input'); file.type = 'file'; file.accept = 'image/jpeg,image/png,image/webp'; file.id = 'profilePhoto';
         const photoLabel = el('label', '프로필 사진'); photoLabel.htmlFor = file.id;
         const photoHint = el('p', 'JPG·PNG·WebP, 최대 5MB. 사진은 작은 크기로 저장됩니다.', 'social-hint');
-        const remove = button('기본 사진으로 변경', () => { version++; busy = false; photo = 'img/FakebookLogo2.png'; preview.src = photo; file.value = ''; notice.textContent = ''; });
+        const remove = button('기본 사진으로 변경', () => { version++; busy = false; photo = DEFAULT_AVATAR; preview.src = photo; file.value = ''; notice.textContent = ''; });
         const name = el('input'); name.id = 'profileName'; name.value = person.name; name.required = true; name.minLength = 2; name.maxLength = 30;
         const bio = el('textarea'); bio.id = 'profileBio'; bio.value = person.bio; bio.maxLength = 200; bio.rows = 3;
         const birthday = el('input'); birthday.id = 'profileBirthday'; birthday.type = 'date'; birthday.value = person.birthday;
         const today = new Date(); const maxDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`; birthday.max = maxDate; birthday.min = '1900-01-01';
         const labelled = (text, field) => { const label = el('label', text); label.htmlFor = field.id; form.append(label, field); };
         form.append(preview, photoLabel, file, photoHint, remove); labelled('표시 이름 (2~30자)', name); labelled('소개 (최대 200자)', bio); labelled('생년월일 (선택)', birthday);
+        const visibility = el('input'); visibility.type = 'checkbox'; visibility.id = 'birthdayPublic'; visibility.checked = person.birthdayPublic;
+        const visibilityLabel = el('label', undefined, 'birthday-visibility'); visibilityLabel.htmlFor = visibility.id; visibilityLabel.append(visibility, el('span', '생년월일 공개')); form.append(visibilityLabel);
+        form.append(el('p', '공개를 끄면 내 프로필에서만 생년월일을 볼 수 있습니다.', 'social-hint'));
         form.append(el('p', '표시 이름은 게시물·댓글에 반영됩니다. 로그인 및 비밀번호 찾기용 가입 이름은 유지됩니다.', 'social-hint'));
         const controls = el('div', undefined, 'profile-form-actions'); const submit = el('button', '저장', 'social-button primary'); submit.type = 'submit'; const cancel = el('a', '취소', 'social-button'); cancel.href = '#profile'; controls.append(submit, cancel); form.append(controls);
         file.addEventListener('change', async () => {
@@ -134,8 +174,8 @@
             if (actor()?.id !== accountId) { location.href = 'index.html'; return; }
             if (busy) { notice.textContent = '사진 처리가 끝난 뒤 저장해주세요.'; return; }
             const displayName = name.value.trim(), intro = bio.value.trim(), birth = birthday.value;
-            if (displayName.length < 2 || displayName.length > 30 || intro.length > 200 || (birth && (birth < '1900-01-01' || birth > maxDate || !/^\d{4}-\d{2}-\d{2}$/.test(birth)))) { notice.textContent = '이름·소개 길이와 생년월일을 확인해주세요.'; return; }
-            const profiles = read('fakebookProfiles', {}); profiles[accountId] = {name: displayName, bio: intro, birthday: birth, avatar: safeImage(photo)};
+            if (displayName.length < 2 || displayName.length > 30 || intro.length > 200 || (birth && !validBirthday(birth, maxDate))) { notice.textContent = '이름·소개 길이와 생년월일을 확인해주세요.'; return; }
+            const profiles = read('fakebookProfiles', {}); profiles[accountId] = {name: displayName, bio: intro, birthday: birth, birthdayPublic: visibility.checked, avatar: safeImage(photo)};
             if (write('fakebookProfiles', profiles)) { notice.textContent = '프로필이 저장되었습니다.'; window.dispatchEvent(new Event('fakebook:profile')); location.hash = '#profile'; }
         });
         panel.append(form);
@@ -159,6 +199,7 @@
         if (!actor()?.id) { location.href = 'index.html'; return; }
         const mine = profile(actor().id); const avatarNode = document.getElementById('sidebarAvatar'); avatarNode.src = mine.avatar;
         document.getElementById('welcomeName').textContent = `${mine.name}님`;
+        const count = document.getElementById('sidebarFriends'); if (count) count.textContent = `친구 ${mine.friendCount}명`;
         document.getElementById('sidebarBio').textContent = mine.bio || 'FAKEBOOK에 오신 것을 환영합니다.';
         const feed = isFeed(); document.querySelector('.app-feed').hidden = !feed; panel.hidden = feed;
         for (const [id, active] of [['homeLink', feed && location.hash !== '#saved'], ['savedLink', location.hash === '#saved'], ['friendsLink', !feed && location.hash.startsWith('#friends')]]) {
@@ -172,10 +213,13 @@
             showProfile(id);
         } else friends();
         panel.append(notice);
+        window.dispatchEvent(new Event('fakebook:social-render'));
     }
-    window.FakebookSocial = {profile, author, isFeed};
+    ensureDemoPosts();
+    window.FakebookSocial = {profile, author, isFeed, profileId, notify: text => { if (!isFeed()) notice.textContent = text; }};
     window.addEventListener('hashchange', render);
     window.addEventListener('fakebook:profile', render);
-    window.addEventListener('storage', event => { if (!event.key || ['fakebookProfiles', 'fakebookCurrentUser', stateKey()].includes(event.key)) render(); });
+    window.addEventListener('storage', event => { if (!event.key || (['fakebookProfiles', 'fakebookCurrentUser', 'fakebookUsers'].includes(event.key) || event.key.startsWith('fakebookFriends:'))) render(); });
     render();
 })();
+

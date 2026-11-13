@@ -27,6 +27,17 @@ function isValidPassword(password) {
     return /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~])[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]{8,}$/.test(password);
 }
 
+function birthdayToday() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function isValidBirthday(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value < '1900-01-01' || value > birthdayToday()) return false;
+    const parsed = new Date(value + 'T00:00:00Z');
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 function setMessage(elementId, message) {
     const element = document.querySelector(`#${elementId}`);
     if (element) element.textContent = message;
@@ -82,10 +93,12 @@ if (findPasswordButton) {
 const signupForm = document.querySelector("#signupForm");
 
 if (signupForm) {
+    document.querySelector("#signupBirthday").max = birthdayToday();
     signupForm.addEventListener("submit", (event) => {
         event.preventDefault();
 
         const name = document.querySelector("#signupName").value.trim();
+        const birthday = document.querySelector("#signupBirthday").value;
         const phone = document.querySelector("#signupPhone").value.trim();
         const id = document.querySelector("#signupId").value.trim();
         const password = document.querySelector("#signupPassword").value;
@@ -93,6 +106,11 @@ if (signupForm) {
 
         if (name.length < 2) {
             alert("이름을 2글자 이상 입력해주세요.");
+            return;
+        }
+
+        if (!isValidBirthday(birthday)) {
+            alert("생년월일을 1900년부터 오늘 사이의 올바른 날짜로 입력해주세요.");
             return;
         }
 
@@ -133,6 +151,8 @@ if (signupForm) {
             password,
             name,
             phone,
+            birthday,
+            birthdayPublic: false,
             createdAt: new Date().toISOString()
         });
 
@@ -243,4 +263,5 @@ if (logoutButton) {
         location.href = "index.html";
     });
 }
+
 
