@@ -26,6 +26,12 @@ const context={document:{querySelector:s=>s==='.feed-composer'?composer:nodes[s.
 const click=(text,scope=root)=>{const b=walk(scope).find(n=>n.tagName==='BUTTON'&&n.textContent===text);assert(b,text);b.click();return b};
 const icons=(kind,scope=root)=>walk(scope).filter(n=>n.className===`icon-button ${kind}-button`);
 const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
+let selections=0;
+context.window.FakebookSocial={
+ profile:()=>({name:'Alice'}),isFeed:()=>true,
+ author:(_,name)=>{const n=new Element('strong');n.textContent=name;return n;},
+ homePostIds:()=>{selections++;return [];}
+};
 (async()=>{
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../js/media-carousel.js'),'utf8'),context);
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../js/feed.js'),'utf8'),context);await flush();
@@ -36,10 +42,18 @@ const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
  const video=walk(gallery).find(n=>n.tagName==='VIDEO'),image=walk(gallery).find(n=>n.tagName==='IMG'); assert(video&&image);
  walk(gallery).find(n=>n.attrs['aria-label']==='이전 첨부 파일').click();
  video.currentTime=27;video.paused=false;
- const resets=root.resetCount,heart=icons('heart',a)[0];heart.click();
+ const resets=root.resetCount,heart=icons('heart',a)[0],selectedBefore=selections;heart.click();
  assert.equal(root.children[0],a);assert.equal(root.children[1],b);assert.equal(active,heart);assert.equal(heart.attrs['aria-pressed'],'true');assert.equal(heart.children[1].textContent,'1');assert.equal(root.resetCount,resets);
  icons('heart',a)[1].click();icons('heart',a)[2].click();icons('bookmark',a)[0].click();
  assert.equal(root.children[0],a);assert.equal(walk(a).find(n=>n.tagName==='VIDEO'),video);assert.equal(video.currentTime,27);assert.equal(video.paused,false);assert.equal(reads,2);assert.equal(created,2);assert.deepEqual(revoked,[]);
+ assert.equal(selections,selectedBefore,'post/comment/reply likes and home bookmarks must not select/render the feed');
+ // 9→10→9에서도 저장소 최신 데이터를 쓰며 버튼만 갱신.
+ const latest=JSON.parse(store.get('fakebookPosts'));latest[0].likedBy=Array.from({length:9},(_,i)=>'demo-'+i);latest[0].ambient={concurrentField:'preserve'};
+ store.set('fakebookPosts',JSON.stringify(latest));
+ heart.click();assert.equal(heart.children[1].textContent,'10');assert.equal(heart.attrs['aria-pressed'],'true');
+ heart.click();assert.equal(heart.children[1].textContent,'9');assert.equal(heart.attrs['aria-pressed'],'false');
+ assert.equal(JSON.parse(store.get('fakebookPosts'))[0].ambient.concurrentField,'preserve');
+ assert.equal(selections,selectedBefore);assert.equal(root.children[0],a);assert.equal(root.resetCount,resets);assert.equal(reads,2);
  // 자동 댓글 좋아요와 배정 정보만 바뀌면 카드/캐러셀을 유지하고 숫자만 갱신.
  const automatic=JSON.parse(store.get('fakebookPosts'));
  automatic[0].comments[0].likedBy.push('demo-2');
@@ -63,6 +77,7 @@ const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
  assert(walk(root).some(n=>n.textContent===legacy.text));assert(!walk(root).some(n=>['댓글 숨기기','다시 표시','숨긴 댓글입니다.'].includes(n.textContent)));
  console.log('PASS: post/comment/reply likes and bookmarks reuse DOM/focus; editor drafts survive; failed saves preserve state; comment update retains other cards and image/video playback/URLs; saved removal releases URLs and preserves empty state');
 })().catch(e=>{console.error(e);process.exitCode=1});
+
 
 
 
