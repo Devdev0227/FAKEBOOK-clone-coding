@@ -415,6 +415,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
 
 /* SVG 아이콘과 답글 */
 .feed-post .icon-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 44px; min-height: 44px; background: transparent; }
+.feed-post .icon-button, .feed-post .icon-button[aria-pressed="true"] { font-weight: 600; }
+.feed-post .heart-button > span { min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; line-height: 1.25; }
 .icon-button svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .feed-post .heart-button[aria-pressed="true"] { color: #e0245e; background: #fff0f4; }
 .feed-post .bookmark-button[aria-pressed="true"] { color: #166fe5; background: #e7f3ff; }
@@ -676,4 +678,5 @@ button:focus-visible, a:focus-visible { outline: 3px solid #166fe5; outline-offs
     .media-carousel-previous { left: 6px; }
     .media-carousel-next { right: 6px; }
 }
+
 

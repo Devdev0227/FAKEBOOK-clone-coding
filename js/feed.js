@@ -127,7 +127,7 @@
             const label = kind === 'heart' ? `좋아요 ${nextCount}개${nextPressed ? ', 취소' : ''}` : (nextPressed ? '저장 취소' : '게시물 저장');
             element.setAttribute('aria-label', label); element.title = label;
             element.setAttribute('aria-pressed', String(nextPressed));
-            if (countNode) countNode.textContent = String(nextCount);
+            if (countNode && countNode.textContent !== String(nextCount)) countNode.textContent = String(nextCount);
         };
         element.updateIcon(count, pressed);
         return element;
@@ -157,10 +157,8 @@
         header.append(author, actions);
         row.append(header, body);
         const liked = comment.likedBy || [];
-        const likeButton = iconButton('heart', liked.length, liked.includes(user.id), () => change(postId, (post, actor) => {
-            const target = find(post).find(item => item.id === comment.id);
-            if (target) target.likedBy = toggle(target.likedBy || [], actor.id);
-        }));
+        const likeButton = iconButton('heart', liked.length, liked.includes(user.id), event =>
+            changeReaction(postId, 'heart', post => find(post).find(item => item.id === comment.id), event.currentTarget));
         bindings.push({button: likeButton, kind: 'heart', resolve: post => find(post).find(item => item.id === comment.id)});
         actions.append(likeButton);
         if (comment.authorId === user.id) actions.append(button(parentId === null ? '댓글 삭제' : '답글 삭제', () => change(postId, (post, actor) => {
@@ -245,6 +243,20 @@
         const posts = getPosts(); const post = posts.find(item => item.id === postId);
         if (!post || action(post, user, posts) === false) return;
         if (save(posts)) render();
+    }
+    function changeReaction(postId, kind, resolve, control) {
+        const user = current();
+        if (!user?.id) { location.href = 'index.html'; return; }
+        const posts = getPosts(), post = posts.find(item => item.id === postId);
+        const target = post && resolve(post);
+        if (!target) return;
+        const key = kind === 'heart' ? 'likedBy' : 'savedBy';
+        target[key] = toggle(Array.isArray(target[key]) ? target[key] : [], user.id);
+        if (!save(posts)) return;
+        // 반응 처리에는 목록 선택·카드 배치·미디어 갱신을 실행하지 않습니다.
+        control.updateIcon((Number(target.legacyLikes) || 0) + target[key].length, target[key].includes(user.id));
+        // 저장됨 목록에서 저장을 취소할 때만 실제로 목록이 달라집니다.
+        if (kind === 'bookmark' && location.hash === '#saved' && !target[key].includes(user.id)) render();
     }
     function displayText(item) { return (item.text || '') + (item.emojiVersion === 1 && item.emoji ? ` ${item.emoji}` : ''); }
     function textElement(tag, text) { const element = document.createElement(tag); element.textContent = text; return element; }
@@ -331,8 +343,8 @@
             const gallery = keepMedia ? previous.gallery : document.createElement('div');
             gallery.className = 'media-grid'; article.append(gallery);
             const actions = document.createElement('div'); actions.className = 'post-actions';
-            const heart = iconButton('heart', post.legacyLikes + post.likedBy.length, post.likedBy.includes(user.id), () => change(post.id, (target, actor) => { target.likedBy = toggle(target.likedBy, actor.id); }));
-            const bookmark = iconButton('bookmark', 0, post.savedBy.includes(user.id), () => change(post.id, (target, actor) => { target.savedBy = toggle(target.savedBy, actor.id); }));
+            const heart = iconButton('heart', post.legacyLikes + post.likedBy.length, post.likedBy.includes(user.id), event => changeReaction(post.id, 'heart', target => target, event.currentTarget));
+            const bookmark = iconButton('bookmark', 0, post.savedBy.includes(user.id), event => changeReaction(post.id, 'bookmark', target => target, event.currentTarget));
             bindings.push({button: heart, kind: 'heart', resolve: target => target}, {button: bookmark, kind: 'bookmark', resolve: target => target});
             actions.append(heart, bookmark);
             const commentCount = post.comments.reduce((sum, comment) => sum + 1 + (comment.replies || []).length, 0);
@@ -389,6 +401,7 @@
     window.addEventListener('pagehide', event => { if (!event.persisted) { previewCarousel?.dispose(); previewUrls.forEach(URL.revokeObjectURL); releaseViews(); } });
     render();
 })();
+
 
 
 
